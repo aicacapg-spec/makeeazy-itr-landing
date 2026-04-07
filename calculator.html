@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Income Tax Calculator FY 2025-26 | MakeEazy</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--navy:#32509F;--navy-dark:#1a2d6b;--tint:#DDE6FF;--tint-light:#EEF2FF;--orange:#F77F00;--orange-hover:#d96c00;--bg:#f0f2f7;--card:#fff;--text:#1a2d5e;--muted:#64748B;--green:#16a34a;--red:#dc2626;--border:#e2e8f0;--radius:12px;--shadow:0 4px 24px rgba(50,80,159,.08)}
+body{font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding:16px}
+.container{max-width:1100px;margin:0 auto;background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+/* Header */
+.header{background:linear-gradient(135deg,var(--navy),var(--navy-dark));color:#fff;padding:28px 32px;text-align:center;position:relative}
+.header h1{font-size:24px;font-weight:800;margin-bottom:4px;letter-spacing:-0.3px}
+.header .sub{font-size:14px;opacity:.85;font-weight:500}
+.header .ver{font-size:11px;opacity:.5;margin-top:6px;font-weight:600;letter-spacing:0.5px}
+.header .back-link{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600;transition:.2s}
+.header .back-link:hover{color:#fff}
+/* Tabs */
+.tabs{display:flex;background:var(--tint);overflow-x:auto;border-bottom:2px solid var(--navy)}
+.tab{padding:13px 22px;cursor:pointer;border:none;background:0 0;color:var(--navy);font-size:13px;font-weight:700;white-space:nowrap;transition:.2s;position:relative;font-family:inherit}
+.tab.active{background:#fff;color:var(--navy)}
+.tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--orange);border-radius:2px 2px 0 0}
+.tab:hover{background:rgba(255,255,255,.5)}
+/* Panels */
+.panel{display:none;padding:28px 32px}
+.panel.active{display:block}
+/* Form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}}
+.form-group{margin-bottom:0}
+.form-group label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px}
+.form-group input,.form-group select{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;transition:.2s;font-family:inherit;background:var(--card)}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(50,80,159,.1)}
+.section-title{font-size:16px;font-weight:800;color:var(--navy);margin:22px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--tint);display:flex;align-items:center;gap:8px}
+.section-title:first-child{margin-top:0}
+/* Info button */
+.info-btn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--navy);color:#fff;font-size:11px;font-weight:700;border:none;cursor:pointer;flex-shrink:0;line-height:1}
+.tooltip-wrap{position:relative;display:inline-flex}
+.tooltip-text{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--navy-dark);color:#fff;padding:12px 16px;border-radius:10px;font-size:12px;font-weight:400;width:300px;z-index:100;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.tooltip-text::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--navy-dark)}
+.tooltip-wrap:hover .tooltip-text,.tooltip-wrap:focus-within .tooltip-text{display:block}
+/* Checkbox & radio */
+.check-group{display:flex;align-items:center;gap:8px;padding:8px 0}
+.check-group input[type=checkbox],.check-group input[type=radio]{width:16px;height:16px;accent-color:var(--navy)}
+.check-group label{font-size:13px;font-weight:500;cursor:pointer}
+/* Info box */
+.info-box{background:var(--tint-light);border-left:3px solid var(--navy);padding:12px 16px;border-radius:0 10px 10px 0;font-size:12px;color:#333;margin:10px 0;line-height:1.7}
+.info-box.warn{background:#fff7ed;border-left-color:var(--orange);color:#92400e}
+.info-box.success{background:#f0fdf4;border-left-color:var(--green);color:#166534}
+/* Results */
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:800px){.result-grid{grid-template-columns:1fr}}
+.regime-card{border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:.3s}
+.regime-card.recommended{border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.1)}
+.regime-header{padding:16px 20px;font-size:15px;font-weight:800;color:#fff;letter-spacing:-0.2px}
+.regime-header.old{background:linear-gradient(135deg,var(--navy),var(--navy-dark))}
+.regime-header.new{background:linear-gradient(135deg,var(--orange),var(--orange-hover))}
+.regime-body{padding:18px 20px}
+.regime-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13px;border-bottom:1px solid #f3f4f6}
+.regime-row:last-child{border:none}
+.regime-row .lbl{color:var(--muted);font-weight:500}
+.regime-row .val{font-weight:700;text-align:right;font-family:'Inter',monospace}
+.regime-row.total{font-size:15px;color:var(--navy);border-top:2px solid var(--navy);margin-top:6px;padding-top:12px}
+.regime-row.total .val{color:var(--navy)}
+.regime-row.indent{padding-left:18px;font-size:12px}
+.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:800;color:#fff;letter-spacing:0.3px}
+.badge.green{background:var(--green)}
+.badge.blue{background:var(--navy)}
+.recommend-box{margin-top:20px;padding:20px 24px;border-radius:var(--radius);text-align:center;font-size:15px;font-weight:700}
+.recommend-box.new-better{background:#f0fdf4;color:var(--green);border:2px solid var(--green)}
+.recommend-box.old-better{background:var(--tint-light);color:var(--navy);border:2px solid var(--navy)}
+.recommend-box.same{background:#f9fafb;color:var(--muted);border:2px solid var(--border)}
+.recommend-box .save{font-size:24px;display:block;margin-top:4px;font-family:'Inter',sans-serif;font-weight:900}
+/* Buttons */
+.btn{padding:12px 28px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;font-family:inherit}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navy-dark);transform:translateY(-1px)}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-orange:hover{background:var(--orange-hover);transform:translateY(-1px)}
+.btn-outline{background:#fff;color:var(--navy);border:2px solid var(--navy)}
+.btn-outline:hover{background:var(--tint-light)}
+.btn-row{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
+/* Disclaimer */
+.disclaimer{background:var(--tint-light);padding:18px 22px;margin:20px 0 0;border-radius:var(--radius);font-size:11px;color:var(--muted);line-height:1.7;border:1px solid var(--tint)}
+.disclaimer strong{color:var(--text)}
+/* Print */
+@media print{
+body{padding:0;background:#fff}
+.container{box-shadow:none}
+.tabs,.btn-row,.no-print,.header .back-link{display:none!important}
+.panel{display:block!important;page-break-inside:avoid}
+.result-grid{grid-template-columns:1fr 1fr}
+}
+/* Old regime only marker */
+.old-only{font-size:10px;background:var(--tint);color:var(--navy);padding:2px 8px;border-radius:6px;font-weight:700;margin-left:4px}
+.new-only{font-size:10px;background:#fff7ed;color:var(--orange);padding:2px 8px;border-radius:6px;font-weight:700;margin-left:4px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<a href="index.html" class="back-link">← Back to Main Site</a>
+<h1>🧮 MakeEazy Income Tax Calculator</h1>
+<div class="sub">Financial Year 2025-26 (Assessment Year 2026-27)</div>
+<div class="ver">v12.0 — Comprehensive Tax Estimator</div>
+</div>
+
+<div class="tabs">
+<button class="tab active" onclick="showTab(0)">👤 Personal</button>
+<button class="tab" onclick="showTab(1)">💼 Income</button>
+<button class="tab" onclick="showTab(2)">🏠 House Property</button>
+<button class="tab" onclick="showTab(3)">📈 Capital Gains</button>
+<button class="tab" onclick="showTab(4)">🏢 Business</button>
+<button class="tab" onclick="showTab(5)">📋 Deductions</button>
+<button class="tab" onclick="showTab(6)">📊 Results</button>
+</div>
+
+<!-- TAB 0: Personal -->
+<div class="panel active" id="tab0">
+<div class="section-title">Personal Information</div>
+<div class="form-grid">
+<div class="form-group">
+<label>Full Name</label>
+<input type="text" id="fullName" placeholder="Enter your name">
+</div>
+<div class="form-group">
+<label>PAN</label>
+<input type="text" id="pan" placeholder="AAAAA0000A" maxlength="10" style="text-transform:uppercase">
+</div>
+<div class="form-group">
+<label>Age as on 31st March 2026
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Age determines basic exemption limit under old regime:<br>• Below 60: ₹2,50,000<br>• 60-79 (Senior): ₹3,00,000<br>• 80+ (Super Senior): ₹5,00,000<br><br>New regime has uniform ₹4,00,000 basic exemption for all ages.</span>
+</span></label>
+<select id="ageCategory">
+<option value="regular">Below 60 years</option>
+<option value="senior">60 to 79 years (Senior Citizen)</option>
+<option value="superSenior">80 years and above (Super Senior)</option>
+</select>
+</div>
+<div class="form-group">
+<label>Residential Status
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text"><strong>Resident (ROR):</strong> Present in India ≥182 days in FY, or ≥60 days in FY + ≥365 days in preceding 4 FYs. Taxed on global income.<br><br><strong>Resident but Not Ordinarily Resident (RNOR):</strong> Has been NR in 9 out of 10 preceding FYs, or present in India ≤729 days in 7 preceding FYs. Taxed on India-sourced + received income only.<br><br><strong>Non-Resident (NR):</strong> Does not satisfy resident conditions. Taxed only on India-sourced income.<br><br><strong>Regime choice:</strong> New regime (115BAC) is default for all. Opting out to old regime is available, but for taxpayers with business/professional income, the opt-out is limited to once and cannot be switched back. This restriction is based on business income, not residential status.</span>
+</span></label>
+<select id="residentialStatus">
+<option value="ROR">Resident & Ordinarily Resident (ROR)</option>
+<option value="RNOR">Resident but Not Ordinarily Resident (RNOR)</option>
+<option value="NR">Non-Resident (NR)</option>
+</select>
+</div>
+<div class="form-group">
+<label>Employer Type
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Affects employer NPS contribution limit under Sec 80CCD(2):<br>• Government: 14% of salary<br>• Private/Others: 10% of salary (14% from FY 2025-26 as per Budget 2025 — to be verified for final notification)</span>
+</span></label>
+<select id="employerType">
+<option value="private">Private Sector</option>
+<option value="government">Government</option>
+</select>
+</div>
+<div class="form-group">
+<label>City of Residence
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Metro cities (Delhi, Mumbai, Kolkata, Chennai) get 50% of salary for HRA exemption. Non-metro get 40%.</span>
+</span></label>
+<select id="cityType">
+<option value="metro">Metro (Delhi/Mumbai/Kolkata/Chennai)</option>
+<option value="nonMetro">Non-Metro</option>
+</select>
+</div>
+</div>
+<div class="btn-row"><button class="btn btn-primary" onclick="showTab(1)">Next: Income →</button></div>
+</div>
+
+<!-- TAB 1: Income -->
+<div class="panel" id="tab1">
+<div class="section-title">Salary Income</div>
+<div class="form-grid">
+<div class="form-group">
+<label>Basic Salary (per annum)</label>
+<input type="number" id="basicSalary" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Dearness Allowance (DA)</label>
+<input type="number" id="da" value="0" min="0">
+</div>
+<div class="form-group">
+<label>HRA Received <span class="old-only">Old Regime Only</span>
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">HRA exemption under Sec 10(13A) is available only under old regime. Exemption = minimum of:<br>1. Actual HRA received<br>2. 50% of salary (metro) / 40% (non-metro)<br>3. Rent paid − 10% of salary<br>Salary = Basic + DA (if forming part of retirement benefits)</span>
+</span></label>
+<input type="number" id="hra" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Rent Paid (per annum) <span class="old-only">Old Regime Only</span></label>
+<input type="number" id="rentPaid" value="0" min="0">
+</div>
+<div class="form-group">
+<label>LTA Received <span class="old-only">Old Regime Only</span>
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text"><strong>Leave Travel Allowance (Sec 10(5)):</strong> Exempt only for actual travel expenses within India. Conditions:<br>• Only 2 journeys in a block of 4 years<br>• Current block: 2022-2025<br>• Only economy airfare / AC 1st class rail<br>• Family members as defined<br>⚠️ Enter only the exempt (eligible) amount. Consult CA for exact computation.</span>
+</span></label>
+<input type="number" id="lta" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Special Allowances (Taxable portion)</label>
+<input type="number" id="specialAllowance" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Gratuity (Exempt Amount)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text"><strong>Gratuity Exemption (Sec 10(10)):</strong><br>Enter only the exempt portion. Maximum limit: ₹20,00,000.<br><br>Computation varies:<br>• Covered under Act: (15 × last salary × years) ÷ 26<br>• Not covered: (15 × last salary × years) ÷ 30<br>• Government employees: fully exempt<br>⚠️ Consult CA for exact computation.</span>
+</span></label>
+<input type="number" id="gratuityExempt" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Leave Encashment (Exempt Amount)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text"><strong>Leave Encashment Exemption (Sec 10(10AA)):</strong><br>For non-government employees on retirement. Max limit: ₹25,00,000 (updated per CBDT notification).<br>⚠️ Enter only the exempt portion after own computation.</span>
+</span></label>
+<input type="number" id="leaveEncashExempt" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Professional Tax Paid <span class="old-only">Old Regime Only</span>
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Deduction under Sec 16(iii). Max ₹2,500. Allowed only under old regime. Not allowed in new regime u/s 115BAC.</span>
+</span></label>
+<input type="number" id="profTax" value="0" min="0" max="2500">
+</div>
+<div class="form-group">
+<label>Employer NPS Contribution (Sec 80CCD(2))
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Employer's contribution to NPS. Allowed in BOTH regimes.<br>Cap: 14% of salary (Govt) / 10% of salary (Private) of (Basic + DA).<br>This deduction is over and above ₹1.5L of 80C.</span>
+</span></label>
+<input type="number" id="employerNPS" value="0" min="0">
+</div>
+</div>
+
+<div class="section-title" style="margin-top:24px">Other Income</div>
+<div class="form-grid">
+<div class="form-group">
+<label>Interest Income (Savings/FD/Others)</label>
+<input type="number" id="interestIncome" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Other Income (Dividends, Gifts, etc.)</label>
+<input type="number" id="otherIncome" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Agricultural Income (for rate purpose)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Agricultural income is exempt u/s 10(1) but used for <strong>rate purposes</strong> under old regime if &gt;₹5,000 and non-agricultural income exceeds basic exemption limit. Partial integration method is applied: tax is computed on (total + agri income) minus tax on (exemption limit + agri income). <strong>Not applicable under new regime.</strong></span>
+</span></label>
+<input type="number" id="agriIncome" value="0" min="0">
+</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-outline" onclick="showTab(0)">← Back</button>
+<button class="btn btn-primary" onclick="showTab(2)">Next: House Property →</button>
+</div>
+</div>
+
+<!-- TAB 2: House Property -->
+<div class="panel" id="tab2">
+<div class="section-title">Income from House Property</div>
+<div class="info-box"><strong>Old Regime:</strong> Both SOP interest deduction (up to ₹2L) and current-year house property loss set-off (up to ₹2L against other income) are allowed. 30% standard deduction on Net Annual Value is automatically computed.<br><br><strong>New Regime (115BAC):</strong> SOP interest deduction is <strong>NOT allowed</strong>. Current-year house property loss <strong>cannot be set off</strong> against other income. Only let-out property income (if positive) is taxable.</div>
+<div class="form-grid">
+<div class="form-group">
+<label>Self-Occupied Property
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">For self-occupied property, NAV = 0. You can claim home loan interest deduction up to ₹2,00,000 <strong>under old regime only</strong>. New regime (115BAC) does NOT allow SOP interest deduction. Enter the annual interest amount below.</span>
+</span></label>
+<select id="hasSOP">
+<option value="no">No Self-Occupied Property</option>
+<option value="yes">Yes, I have a Self-Occupied Property</option>
+</select>
+</div>
+<div class="form-group">
+<label>Home Loan Interest (Self-Occupied, per annum)</label>
+<input type="number" id="homeLoanSOP" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Let-Out: Gross Annual Rent Received</label>
+<input type="number" id="letOutRent" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Let-Out: Municipal Taxes Paid</label>
+<input type="number" id="municipalTax" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Let-Out: Home Loan Interest</label>
+<input type="number" id="homeLoanLetOut" value="0" min="0">
+</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-outline" onclick="showTab(1)">← Back</button>
+<button class="btn btn-primary" onclick="showTab(3)">Next: Capital Gains →</button>
+</div>
+</div>
+
+<!-- TAB 3: Capital Gains -->
+<div class="panel" id="tab3">
+<div class="section-title">Capital Gains Income
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text"><strong>FY 2025-26 Rates (post Budget 2024):</strong><br>• STCG on Equity (Sec 111A): 20%<br>• LTCG on Equity (Sec 112A): 12.5% (₹1.25L exempt)<br>• LTCG on Non-Equity (Sec 112): 12.5% (no indexation)<br>• STCG Non-Equity: At normal slab rates<br><br>Note: Surcharge on equity CG capped at 15%.</span>
+</span>
+</div>
+<div class="form-grid">
+<div class="form-group">
+<label>STCG — Equity / Mutual Funds (Sec 111A) @ 20%</label>
+<input type="number" id="stcgEquity" value="0" min="0">
+</div>
+<div class="form-group">
+<label>STCG — Non-Equity / Other Assets (at slab rates)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">STCG on non-equity assets (debt MF, property <24 months, gold <24 months, etc.) is taxed at normal slab rates. This gets added to your normal income for slab computation.</span>
+</span></label>
+<input type="number" id="stcgOther" value="0" min="0">
+</div>
+<div class="form-group">
+<label>LTCG — Equity / Equity MF (Sec 112A) @ 12.5%
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">LTCG on listed equity/equity MF. First ₹1,25,000 is exempt. Tax at 12.5% on balance. Surcharge capped at 15%.</span>
+</span></label>
+<input type="number" id="ltcgEquity" value="0" min="0">
+</div>
+<div class="form-group">
+<label>LTCG — Non-Equity (Sec 112) @ 12.5%
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">LTCG on non-equity assets (debt MF >24m, property >24m, gold >24m, unlisted shares >24m). Taxed at 12.5% without indexation benefit from FY 2024-25 onwards. Normal surcharge rates apply (no 15% cap).</span>
+</span></label>
+<input type="number" id="ltcgOther" value="0" min="0">
+</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-outline" onclick="showTab(2)">← Back</button>
+<button class="btn btn-primary" onclick="showTab(4)">Next: Business →</button>
+</div>
+</div>
+
+<!-- TAB 4: Business Income -->
+<div class="panel" id="tab4">
+<div class="section-title">Business / Professional Income (Presumptive)</div>
+<div class="info-box">This section covers presumptive taxation under Sec 44AD (business) and 44ADA (profession). For detailed P&L based computation, consult a CA.</div>
+<div class="form-grid">
+<div class="form-group">
+<label>Business Type</label>
+<select id="businessType">
+<option value="none">No Business Income</option>
+<option value="44AD">Sec 44AD — Business (Turnover ≤ ₹3 Cr)</option>
+<option value="44ADA">Sec 44ADA — Profession (Receipts ≤ ₹75L)</option>
+</select>
+</div>
+<div class="form-group">
+<label>Gross Turnover / Receipts</label>
+<input type="number" id="businessTurnover" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Presumptive Income Rate
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text"><strong>44AD:</strong> 8% of turnover (6% for digital receipts). You can declare higher.<br><strong>44ADA:</strong> 50% of gross receipts. You can declare higher.<br>Enter your declared profit % or use defaults.</span>
+</span></label>
+<select id="presumptiveRate">
+<option value="8">8% (44AD — Cash/Mixed)</option>
+<option value="6">6% (44AD — Fully Digital)</option>
+<option value="50">50% (44ADA — Professional)</option>
+<option value="custom">Custom %</option>
+</select>
+</div>
+<div class="form-group" id="customRateGroup" style="display:none">
+<label>Custom Profit % (cannot be less than minimum)</label>
+<input type="number" id="customRate" value="8" min="1" max="100">
+</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-outline" onclick="showTab(3)">← Back</button>
+<button class="btn btn-primary" onclick="showTab(5)">Next: Deductions →</button>
+</div>
+</div>
+
+<!-- TAB 5: Deductions -->
+<div class="panel" id="tab5">
+<div class="section-title">Deductions (Chapter VI-A) <span class="old-only">Mostly Old Regime</span></div>
+<div class="info-box">Most deductions below apply only to the Old Regime. New Regime allows only: Standard Deduction (₹75,000), Employer NPS (80CCD(2)), and Family Pension Deduction.</div>
+
+<div class="section-title" style="font-size:14px">Section 80C / 80CCC / 80CCD(1) — Combined Limit ₹1,50,000</div>
+<div class="form-grid">
+<div class="form-group">
+<label>80C (PPF, ELSS, LIC, PF, Tuition, etc.)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Includes: EPF, PPF, ELSS, LIC premium, NSC, 5-yr FD, tuition fees (max 2 children), home loan principal, Sukanya Samriddhi, stamp duty, etc. Combined limit ₹1,50,000.</span>
+</span></label>
+<input type="number" id="sec80C" value="0" min="0">
+</div>
+<div class="form-group">
+<label>80CCD(1B) — Self NPS (Additional ₹50,000)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Additional deduction up to ₹50,000 for self-contribution to NPS. Over and above ₹1.5L limit of 80C. Old regime only.</span>
+</span></label>
+<input type="number" id="sec80CCD1B" value="0" min="0" max="50000">
+</div>
+</div>
+
+<div class="section-title" style="font-size:14px">Section 80D — Medical Insurance</div>
+<div class="form-grid">
+<div class="form-group">
+<label>Health Insurance Premium — Self/Family
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Premium for self, spouse, dependent children.<br>Limit: ₹25,000 (below 60) / ₹50,000 (senior 60+).<br>Preventive checkup of ₹5,000 is WITHIN this limit, not additional.</span>
+</span></label>
+<input type="number" id="healthInsSelf" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Preventive Health Checkup — Self
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Up to ₹5,000 for self/family. This is WITHIN the overall 80D limit of ₹25,000/₹50,000, not in addition to it. Combined total of premium + checkup cannot exceed the limit.</span>
+</span></label>
+<input type="number" id="preventiveSelf" value="0" min="0" max="5000">
+</div>
+<div class="form-group">
+<label>Are you (self) a Senior Citizen (60+)?</label>
+<select id="selfSenior80D">
+<option value="no">No (below 60)</option>
+<option value="yes">Yes (60 or above)</option>
+</select>
+</div>
+<div class="form-group">
+<label>Health Insurance Premium — Parents</label>
+<input type="number" id="healthInsParents" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Preventive Health Checkup — Parents</label>
+<input type="number" id="preventiveParents" value="0" min="0" max="5000">
+</div>
+<div class="form-group">
+<label>Are your parents Senior Citizens (60+)?</label>
+<select id="parentsSenior80D">
+<option value="no">No (below 60)</option>
+<option value="yes">Yes (60 or above)</option>
+</select>
+</div>
+</div>
+
+<div class="section-title" style="font-size:14px">Other Deductions <span class="old-only">Old Regime Only</span></div>
+<div class="form-grid">
+<div class="form-group">
+<label>80D — Medical Expenditure (Uninsured Senior)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">For uninsured senior citizens, medical expenditure up to ₹50,000 can be claimed. This is within the overall 80D limit.</span>
+</span></label>
+<input type="number" id="medExpSenior" value="0" min="0">
+</div>
+<div class="form-group">
+<label>80E — Education Loan Interest (No limit)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Interest paid on education loan for higher studies. No upper limit. Available for 8 years from the year you start repaying.</span>
+</span></label>
+<input type="number" id="sec80E" value="0" min="0">
+</div>
+<div class="form-group">
+<label>80G — Donations
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text"><strong>100% Deduction:</strong> PM National Relief Fund, National Defence Fund, CM Relief Fund, Clean Ganga Fund, etc.<br><br><strong>50% Deduction:</strong> PM Drought Relief Fund, notified charitable institutions, etc.<br><br>⚠️ Some donations are subject to 10% of Adjusted Gross Total Income qualifying limit. Cash donations above ₹2,000 to any single institution are NOT eligible. Enter only the eligible deduction amount after verifying conditions.</span>
+</span></label>
+<select id="donationType">
+<option value="100">100% Deduction Eligible</option>
+<option value="50">50% Deduction Eligible</option>
+</select>
+</div>
+<div class="form-group">
+<label>80G — Donation Amount</label>
+<input type="number" id="sec80G" value="0" min="0">
+</div>
+<div class="form-group">
+<label>80GG — Rent (no HRA from employer)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text"><strong>80GG:</strong> For those NOT receiving HRA. Min of:<br>1. ₹5,000/month<br>2. 25% of Adjusted Total Income<br>3. Rent paid − 10% of ATI<br>⚠️ Must file Form 10BA. You/spouse/minor child should not own residential property in the city of employment. Enter total rent paid.</span>
+</span></label>
+<input type="number" id="sec80GG" value="0" min="0">
+</div>
+<div class="form-group">
+<label>80TTA/80TTB — Savings Interest Deduction
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">80TTA: Up to ₹10,000 on savings interest (below 60).<br>80TTB: Up to ₹50,000 on all interest for Senior Citizens (60+).</span>
+</span></label>
+<input type="number" id="sec80TTA" value="0" min="0">
+</div>
+<div class="form-group">
+<label>80DD — Disabled Dependent
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Flat deduction for maintaining disabled dependent:<br>• 40-79% disability: ₹75,000<br>• 80%+ severe: ₹1,25,000</span>
+</span></label>
+<select id="sec80DD">
+<option value="0">Not Applicable</option>
+<option value="75000">₹75,000 (40-79% disability)</option>
+<option value="125000">₹1,25,000 (80%+ severe disability)</option>
+</select>
+</div>
+<div class="form-group">
+<label>80U — Self Disability
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Flat deduction for person with disability:<br>• 40-79%: ₹75,000<br>• 80%+ severe: ₹1,25,000</span>
+</span></label>
+<select id="sec80U">
+<option value="0">Not Applicable</option>
+<option value="75000">₹75,000 (40-79% disability)</option>
+<option value="125000">₹1,25,000 (80%+ severe disability)</option>
+</select>
+</div>
+<div class="form-group">
+<label>80DDB — Medical Treatment (Specified Diseases)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Medical treatment for specified diseases.<br>Below 60: up to ₹40,000<br>Senior 60+: up to ₹1,00,000<br>Requires Form 10-I from specialist doctor.</span>
+</span></label>
+<input type="number" id="sec80DDB" value="0" min="0">
+</div>
+<div class="form-group">
+<label>Family Pension Income (for deduction u/s 57)
+<span class="tooltip-wrap"><button class="info-btn">i</button>
+<span class="tooltip-text">Deduction on family pension u/s 57(iia): lower of 1/3rd of pension received or the applicable cap.<br><br><strong>Old Regime:</strong> Cap = ₹15,000<br><strong>New Regime (115BAC):</strong> Cap = ₹25,000<br><br>Allowed in BOTH regimes with respective limits.</span>
+</span></label>
+<input type="number" id="familyPension" value="0" min="0">
+</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-outline" onclick="showTab(4)">← Back</button>
+<button class="btn btn-orange" onclick="calculateTax()">🧮 Calculate Tax</button>
+</div>
+</div>
+
+<!-- TAB 6: Results -->
+<div class="panel" id="tab6">
+<div id="resultsContent">
+<div class="info-box" style="text-align:center;padding:40px">Please fill in your details and click <strong>Calculate Tax</strong> on the Deductions tab.</div>
+</div>
+</div>
+</div><!-- container -->
+
+<script>
+// ===================== TAB NAVIGATION =====================
+function showTab(idx) {
+    document.querySelectorAll('.panel').forEach((p,i) => {
+        p.classList.toggle('active', i === idx);
+    });
+    document.querySelectorAll('.tab').forEach((t,i) => {
+        t.classList.toggle('active', i === idx);
+    });
+}
+
+// Business type toggle
+document.getElementById('presumptiveRate').addEventListener('change', function() {
+    document.getElementById('customRateGroup').style.display = this.value === 'custom' ? '' : 'none';
+});
+document.getElementById('businessType').addEventListener('change', function() {
+    const v = this.value;
+    const rateEl = document.getElementById('presumptiveRate');
+    if (v === '44ADA') { rateEl.value = '50'; }
+    else if (v === '44AD') { rateEl.value = '8'; }
+});
+
+// ===================== CONSTANTS =====================
+const TAX = {
+    // Old regime slabs by age
+    OLD_SLABS: {
+        regular: [{l:250000,r:0},{l:500000,r:0.05},{l:1000000,r:0.20},{l:Infinity,r:0.30}],
+        senior:  [{l:300000,r:0},{l:500000,r:0.05},{l:1000000,r:0.20},{l:Infinity,r:0.30}],
+        superSenior:[{l:500000,r:0},{l:1000000,r:0.20},{l:Infinity,r:0.30}]
+    },
+    // New regime slabs (FY 2025-26, Budget 2025)
+    NEW_SLABS: [
+        {l:400000,r:0},{l:800000,r:0.05},{l:1200000,r:0.10},{l:1600000,r:0.15},
+        {l:2000000,r:0.20},{l:2400000,r:0.25},{l:Infinity,r:0.30}
+    ],
+    // Exemption limits
+    EXEMPT_OLD: {regular:250000, senior:300000, superSenior:500000},
+    EXEMPT_NEW: 400000, // uniform for all ages
+    // Rebate 87A
+    REBATE_OLD_LIMIT: 500000, // old: if taxable ≤ 5L, rebate up to 12500
+    REBATE_OLD_MAX: 12500,
+    REBATE_NEW_LIMIT: 1200000, // new: if normal taxable ≤ 12L, rebate up to 60000
+    REBATE_NEW_MAX: 60000,
+    // Standard deduction
+    STD_DED_OLD: 50000,
+    STD_DED_NEW: 75000,
+    // Section limits
+    LIMIT_80C: 150000,
+    LIMIT_80CCD1B: 50000,
+    LIMIT_80D_REGULAR: 25000,
+    LIMIT_80D_SENIOR: 50000,
+    LIMIT_PREVENTIVE: 5000, // within 80D overall
+    LIMIT_80TTA: 10000,
+    LIMIT_80TTB: 50000,
+    LIMIT_80DDB_REGULAR: 40000,
+    LIMIT_80DDB_SENIOR: 100000,
+    LIMIT_80GG_MONTHLY: 5000,
+    LIMIT_SOP_INTEREST: 200000,
+    LIMIT_HP_LOSS_SETOFF: 200000,
+    LIMIT_GRATUITY: 2000000,
+    LIMIT_LEAVE_ENCASH: 2500000,
+    LIMIT_PROF_TAX: 2500,
+    LIMIT_FAMILY_PENSION_OLD: 15000,
+    LIMIT_FAMILY_PENSION_NEW: 25000,
+    // Employer NPS caps (% of basic+DA)
+    NPS_CAP_GOVT: 0.14,
+    NPS_CAP_PRIVATE: 0.10,
+    // Capital gains
+    CG_STCG_EQUITY_RATE: 0.20, // 111A
+    CG_LTCG_EQUITY_RATE: 0.125, // 112A
+    CG_LTCG_OTHER_RATE: 0.125, // 112
+    CG_LTCG_EQUITY_EXEMPT: 125000, // ₹1.25L exempt
+    // Surcharge thresholds
+    SURCHARGE_OLD: [
+        {limit:5000000, rate:0}, {limit:10000000, rate:0.10},
+        {limit:20000000, rate:0.15}, {limit:50000000, rate:0.25},
+        {limit:Infinity, rate:0.37}
+    ],
+    SURCHARGE_NEW: [
+        {limit:5000000, rate:0}, {limit:10000000, rate:0.10},
+        {limit:20000000, rate:0.15}, {limit:Infinity, rate:0.25}
+    ],
+    CESS_RATE: 0.04
+};
+
+// ===================== HELPER FUNCTIONS =====================
+function getVal(id) { return Math.max(0, parseFloat(document.getElementById(id).value) || 0); }
+function getSelect(id) { return document.getElementById(id).value; }
+function fmt(n) { return '₹' + Math.round(n).toLocaleString('en-IN'); }
+function round10(n) { return Math.round(n / 10) * 10; } // Sec 288B
+
+// Slab tax engine - calculates tax on given income using given slabs
+function calcSlabTax(income, slabs) {
+    let tax = 0, prev = 0;
+    const breakdown = [];
+    for (const slab of slabs) {
+        if (income <= prev) break;
+        const taxable = Math.min(income, slab.l) - prev;
+        const t = taxable * slab.r;
+        tax += t;
+        if (taxable > 0) {
+            breakdown.push({from: prev, to: Math.min(income, slab.l), rate: slab.r, tax: t});
+        }
+        prev = slab.l;
+    }
+    return {tax, breakdown};
+}
+
+// Surcharge rate for given total income
+function getSurchargeRate(totalIncome, brackets) {
+    for (const b of brackets) {
+        if (totalIncome <= b.limit) return b.rate;
+    }
+    return brackets[brackets.length - 1].rate;
+}
+
+// Marginal relief on surcharge (single combined calculation)
+// At each threshold, tax+surcharge should not exceed: tax_at_threshold + (income - threshold)
+function calcMarginalRelief(totalIncome, totalTaxBeforeSurcharge, surchargeAmount, brackets) {
+    if (surchargeAmount <= 0) return 0;
+    
+    let maxRelief = 0;
+    // Check each threshold where surcharge kicks in or rate changes
+    for (let i = 1; i < brackets.length; i++) {
+        const threshold = brackets[i-1].limit;
+        if (totalIncome > threshold && brackets[i].rate > brackets[i-1].rate) {
+            // Tax + surcharge at threshold
+            const taxAtThreshold = totalTaxBeforeSurcharge; // We need tax AT the threshold
+            // Actually we need to recalculate: What would total tax+surcharge be exactly at threshold?
+            // This is complex - we use the standard formula:
+            // Tax+Surcharge should not exceed: Tax@threshold + Surcharge@threshold + (Income - Threshold)
+            const excessIncome = totalIncome - threshold;
+            
+            // Compute tax at threshold (using same slab engine - we'd need slabs here)
+            // For simplicity and correctness, marginal relief = max(0, (tax+surcharge) - (taxAtThreshold + surchargeAtThreshold + excessIncome))
+            // We'll handle this in the main calc where we have access to slab engine
+        }
+    }
+    return maxRelief;
+}
+
+// ===================== MAIN CALCULATION =====================
+function calculateTax() {
+    const age = getSelect('ageCategory');
+    const isOldRegime = true; // we calculate both
+    const cityType = getSelect('cityType');
+    const employerType = getSelect('employerType');
+    
+    // ---- SALARY COMPUTATION ----
+    const basic = getVal('basicSalary');
+    const da = getVal('da');
+    const hraReceived = getVal('hra');
+    const rentPaid = getVal('rentPaid');
+    const ltaExempt = getVal('lta');
+    const specialAllow = getVal('specialAllowance');
+    const gratuityExempt = Math.min(getVal('gratuityExempt'), TAX.LIMIT_GRATUITY);
+    const leaveExempt = Math.min(getVal('leaveEncashExempt'), TAX.LIMIT_LEAVE_ENCASH);
+    const profTax = Math.min(getVal('profTax'), TAX.LIMIT_PROF_TAX);
+    const employerNPS = getVal('employerNPS');
+    
+    // Employer NPS cap
+    const salaryForNPS = basic + da;
+    const npsCap = employerType === 'government' ? TAX.NPS_CAP_GOVT : TAX.NPS_CAP_PRIVATE;
+    const validEmployerNPS = Math.min(employerNPS, salaryForNPS * npsCap);
+    
+    // HRA Exemption (Old regime only)
+    const salaryForHRA = basic + da;
+    let hraExempt = 0;
+    if (hraReceived > 0 && rentPaid > 0) {
+        const metroPercent = cityType === 'metro' ? 0.50 : 0.40;
+        hraExempt = Math.max(0, Math.min(
+            hraReceived,
+            salaryForHRA * metroPercent,
+            Math.max(0, rentPaid - salaryForHRA * 0.10)
+        ));
+    }
+    
+    // Gross Salary
+    const grossSalary = basic + da + hraReceived + ltaExempt + specialAllow;
+    
+    // Net Salary under each regime
+    // OLD: HRA exempt, LTA exempt, Prof tax deduction, Std deduction 50K
+    const salaryIncomeOld = grossSalary - hraExempt - ltaExempt - profTax - TAX.STD_DED_OLD;
+    // NEW: Only Std deduction 75K (no HRA, no LTA, no Prof Tax deduction)
+    const salaryIncomeNew = grossSalary - TAX.STD_DED_NEW;
+    
+    // ---- OTHER INCOME ----
+    const interestIncome = getVal('interestIncome');
+    const otherIncome = getVal('otherIncome');
+    const agriIncome = getVal('agriIncome');
+    
+    // ---- HOUSE PROPERTY ----
+    const hasSOP = getSelect('hasSOP') === 'yes';
+    const homeLoanSOP = getVal('homeLoanSOP');
+    const letOutRent = getVal('letOutRent');
+    const municipalTax = getVal('municipalTax');
+    const homeLoanLetOut = getVal('homeLoanLetOut');
+    
+    // Self-occupied: Loss = -min(interest, 2L)
+    const sopLoss = hasSOP ? -Math.min(homeLoanSOP, TAX.LIMIT_SOP_INTEREST) : 0;
+    
+    // Let-out: NAV - 30% std deduction - interest
+    const nav = Math.max(0, letOutRent - municipalTax);
+    const stdDedHP = nav * 0.30;
+    const letOutIncome = nav - stdDedHP - homeLoanLetOut;
+    
+    const housePropertyIncome = sopLoss + letOutIncome;
+    // Loss set-off capped at ₹2L against other income
+    const hpForSetOff = Math.max(-TAX.LIMIT_HP_LOSS_SETOFF, housePropertyIncome);
+    
+    // ---- CAPITAL GAINS ----
+    const stcgEquity = getVal('stcgEquity');     // 111A - 20%
+    const stcgOther = getVal('stcgOther');         // slab rate
+    const ltcgEquity = getVal('ltcgEquity');       // 112A - 12.5%
+    const ltcgOther = getVal('ltcgOther');         // 112 - 12.5%
+    
+    // LTCG equity exemption
+    const ltcgEquityTaxable = Math.max(0, ltcgEquity - TAX.CG_LTCG_EQUITY_EXEMPT);
+    
+    // ---- BUSINESS INCOME ----
+    const bizType = getSelect('businessType');
+    let businessIncome = 0;
+    if (bizType !== 'none') {
+        const turnover = getVal('businessTurnover');
+        let rate;
+        const rateSelect = getSelect('presumptiveRate');
+        if (rateSelect === 'custom') {
+            rate = Math.max(bizType === '44ADA' ? 50 : (rateSelect === '6' ? 6 : 8), getVal('customRate'));
+        } else {
+            rate = parseFloat(rateSelect);
+        }
+        businessIncome = turnover * rate / 100;
+    }
+    
+    // ---- DEDUCTIONS (OLD REGIME) ----
+    const sec80C = Math.min(getVal('sec80C'), TAX.LIMIT_80C);
+    const sec80CCD1B = Math.min(getVal('sec80CCD1B'), TAX.LIMIT_80CCD1B);
+    
+    // 80D calculation - preventive checkup WITHIN overall limit
+    const selfSenior = getSelect('selfSenior80D') === 'yes';
+    const parentsSenior = getSelect('parentsSenior80D') === 'yes';
+    const maxSelfLimit = selfSenior ? TAX.LIMIT_80D_SENIOR : TAX.LIMIT_80D_REGULAR;
+    const maxParentsLimit = parentsSenior ? TAX.LIMIT_80D_SENIOR : TAX.LIMIT_80D_REGULAR;
+    
+    const hiSelf = getVal('healthInsSelf');
+    const pcSelf = Math.min(getVal('preventiveSelf'), TAX.LIMIT_PREVENTIVE);
+    const hiParents = getVal('healthInsParents');
+    const pcParents = Math.min(getVal('preventiveParents'), TAX.LIMIT_PREVENTIVE);
+    const medExpSr = getVal('medExpSenior');
+    
+    // Self: premium + checkup, capped at overall limit
+    const total80DSelf = Math.min(hiSelf + pcSelf, maxSelfLimit);
+    // Parents: premium + checkup + med expenditure (for uninsured sr), capped
+    const total80DParents = Math.min(hiParents + pcParents + (parentsSenior ? medExpSr : 0), maxParentsLimit);
+    const total80D = total80DSelf + total80DParents;
+    
+    const sec80E = getVal('sec80E');
+    
+    const donationType = getSelect('donationType');
+    const donationAmt = getVal('sec80G');
+    const sec80G = donationType === '100' ? donationAmt : donationAmt * 0.50;
+    
+    // 80GG
+    const sec80GGRent = getVal('sec80GG');
+    
+    const sec80TTA_val = getVal('sec80TTA');
+    const ttaLimit = (age === 'senior' || age === 'superSenior') ? TAX.LIMIT_80TTB : TAX.LIMIT_80TTA;
+    const sec80TTA = Math.min(sec80TTA_val, ttaLimit);
+    
+    const sec80DD = parseFloat(getSelect('sec80DD'));
+    const sec80U = parseFloat(getSelect('sec80U'));
+    
+    const sec80DDB_val = getVal('sec80DDB');
+    const ddbLimit = (age === 'senior' || age === 'superSenior') ? TAX.LIMIT_80DDB_SENIOR : TAX.LIMIT_80DDB_REGULAR;
+    const sec80DDB = Math.min(sec80DDB_val, ddbLimit);
+    
+    // Family pension - raw value; regime-specific deduction computed inside computeRegime
+    const famPension = getVal('familyPension');
+    
+    // ========== COMPUTE FOR BOTH REGIMES ==========
+    function computeRegime(isOld) {
+        const label = isOld ? 'Old' : 'New';
+        const slabs = isOld ? TAX.OLD_SLABS[age] : TAX.NEW_SLABS;
+        const surchargeSlabs = isOld ? TAX.SURCHARGE_OLD : TAX.SURCHARGE_NEW;
+        
+        // Gross Total Income
+        const salaryIncome = isOld ? Math.max(0, salaryIncomeOld) : Math.max(0, salaryIncomeNew);
+        
+        // House property: New regime does NOT allow SOP loss or HP loss set-off
+        const hpIncome = isOld ? hpForSetOff : Math.max(0, letOutIncome); // New: only positive let-out income
+        
+        // Family pension deduction (regime-specific caps)
+        const famPensionCap = isOld ? TAX.LIMIT_FAMILY_PENSION_OLD : TAX.LIMIT_FAMILY_PENSION_NEW;
+        const famPensionDeduction = Math.min(famPension / 3, famPensionCap);
+        
+        // STCG other is at slab rates - added to normal income
+        const normalIncome = salaryIncome + interestIncome + otherIncome + hpIncome + businessIncome + stcgOther + famPension;
+        
+        // Deductions
+        let totalDeductions = 0;
+        if (isOld) {
+            // 80GG computation
+            let gg80 = 0;
+            if (sec80GGRent > 0 && hraReceived === 0) {
+                const ati = Math.max(0, normalIncome - sec80C - sec80CCD1B);
+                gg80 = Math.min(TAX.LIMIT_80GG_MONTHLY * 12, ati * 0.25, Math.max(0, sec80GGRent - ati * 0.10));
+            }
+            totalDeductions = sec80C + sec80CCD1B + total80D + sec80E + sec80G + gg80 + sec80TTA + sec80DD + sec80U + sec80DDB + validEmployerNPS + famPensionDeduction;
+        } else {
+            // New regime: only employer NPS + family pension deduction
+            totalDeductions = validEmployerNPS + famPensionDeduction;
+        }
+        
+        const taxableNormal = Math.max(0, normalIncome - totalDeductions);
+        
+        // Total taxable income (includes all CG) - used for 87A and surcharge
+        const totalTaxableIncome = taxableNormal + stcgEquity + ltcgEquityTaxable + ltcgOther;
+        
+        // ---- TAX ON NORMAL INCOME ----
+        let normalTaxResult = calcSlabTax(taxableNormal, slabs);
+        let normalTax = normalTaxResult.tax;
+        
+        // ---- AGRICULTURAL INCOME PARTIAL INTEGRATION (Old Regime Only) ----
+        // If agri income > ₹5,000 and non-agri income exceeds basic exemption
+        let agriTaxAdjustment = 0;
+        if (isOld && agriIncome > 5000 && taxableNormal > TAX.EXEMPT_OLD[age]) {
+            // Tax on (taxable normal + agri income) using old slabs
+            const taxWithAgri = calcSlabTax(taxableNormal + agriIncome, slabs).tax;
+            // Tax on (basic exemption + agri income) using old slabs
+            const taxOnAgriExempt = calcSlabTax(TAX.EXEMPT_OLD[age] + agriIncome, slabs).tax;
+            // Actual tax = taxWithAgri - taxOnAgriExempt
+            normalTax = taxWithAgri - taxOnAgriExempt;
+            agriTaxAdjustment = normalTax - normalTaxResult.tax; // positive = higher tax due to agri
+        }
+        
+        // ---- REBATE u/s 87A ----
+        // NR cannot claim 87A rebate
+        let rebate = 0;
+        const residentialStatus = getSelect('residentialStatus');
+        const isResident = (residentialStatus === 'ROR' || residentialStatus === 'RNOR');
+        
+        if (isResident) {
+            if (isOld) {
+                // Old: if TOTAL taxable income ≤ 5L, rebate = min(normalTax, 12500)
+                if (totalTaxableIncome <= TAX.REBATE_OLD_LIMIT) {
+                    rebate = Math.min(normalTax, TAX.REBATE_OLD_MAX);
+                }
+            } else {
+                // New: if TOTAL taxable income ≤ 12L, rebate up to ₹60,000 (on normal tax only)
+                if (totalTaxableIncome <= TAX.REBATE_NEW_LIMIT) {
+                    rebate = Math.min(normalTax, TAX.REBATE_NEW_MAX);
+                } else if (totalTaxableIncome <= 1270589) {
+                    // Marginal relief zone: ₹12,00,001 to ~₹12,70,588 (only if CG don't push above)
+                    const marginalTax = totalTaxableIncome - TAX.REBATE_NEW_LIMIT;
+                    if (normalTax > marginalTax) {
+                        rebate = normalTax - marginalTax;
+                    }
+                }
+            }
+        }
+        
+        const normalTaxAfterRebate = Math.max(0, normalTax - rebate);
+        
+        // ---- TAX ON CAPITAL GAINS (Special Rates) ----
+        const taxSTCGEquity = stcgEquity * TAX.CG_STCG_EQUITY_RATE;       // 111A @ 20%
+        const taxLTCGEquity = ltcgEquityTaxable * TAX.CG_LTCG_EQUITY_RATE;  // 112A @ 12.5%
+        const taxLTCGOther = ltcgOther * TAX.CG_LTCG_OTHER_RATE;           // 112 @ 12.5%
+        
+        const totalCGTax = taxSTCGEquity + taxLTCGEquity + taxLTCGOther;
+        
+        const totalTaxBeforeSurcharge = normalTaxAfterRebate + totalCGTax;
+        
+        // ---- SURCHARGE ----
+        // Surcharge rate based on TOTAL taxable income
+        const baseSurchargeRate = getSurchargeRate(totalTaxableIncome, surchargeSlabs);
+        
+        // Normal income surcharge
+        const surchargeNormal = normalTaxAfterRebate * baseSurchargeRate;
+        
+        // CG surcharge with caps
+        // Equity CG (111A, 112A): surcharge capped at 15%
+        const equitySurchargeRate = Math.min(baseSurchargeRate, 0.15);
+        const surchargeSTCGEquity = taxSTCGEquity * equitySurchargeRate;
+        const surchargeLTCGEquity = taxLTCGEquity * equitySurchargeRate;
+        // Non-equity CG (112): normal surcharge rate (with regime cap already in brackets)
+        const surchargeLTCGOther = taxLTCGOther * baseSurchargeRate;
+        
+        const totalSurcharge = surchargeNormal + surchargeSTCGEquity + surchargeLTCGEquity + surchargeLTCGOther;
+        
+        // ---- MARGINAL RELIEF ON SURCHARGE ----
+        // Single combined marginal relief calculation
+        let marginalRelief = 0;
+        if (totalSurcharge > 0) {
+            // Check each surcharge threshold
+            for (let i = 1; i < surchargeSlabs.length; i++) {
+                const threshold = surchargeSlabs[i-1].limit;
+                const prevRate = surchargeSlabs[i-1].rate;
+                const currRate = surchargeSlabs[i].rate;
+                
+                if (totalTaxableIncome > threshold && currRate > prevRate) {
+                    // Recalculate total tax at exactly the threshold
+                    // Normal taxable at threshold: scale proportionally? No - we need exact calc.
+                    // The statutory check: (Tax + Surcharge) should not exceed (Tax@threshold + Surcharge@threshold + excess)
+                    
+                    // Tax at threshold for normal income:
+                    // We assume proportional: if total income dropped to threshold, 
+                    // what would be the tax? We need to recalculate with threshold as total income.
+                    // BUT: we can't just reduce normal income - the CG amounts are fixed.
+                    
+                    // Standard approach: compute tax+surcharge if TOTAL income = threshold
+                    // This means normal income at threshold = threshold - (stcgEquity + ltcgEquityTaxable + ltcgOther)
+                    const cgTotal = stcgEquity + ltcgEquityTaxable + ltcgOther;
+                    const normalAtThreshold = Math.max(0, threshold - cgTotal);
+                    
+                    // Tax on normal income at threshold
+                    const normalTaxAtThr = calcSlabTax(Math.min(normalAtThreshold, taxableNormal), slabs).tax;
+                    // Apply rebate at threshold
+                    let rebateAtThr = 0;
+                    const normalTaxableAtThr = Math.min(taxableNormal, normalAtThreshold);
+                    if (isOld && normalTaxableAtThr <= TAX.REBATE_OLD_LIMIT) {
+                        rebateAtThr = Math.min(normalTaxAtThr, TAX.REBATE_OLD_MAX);
+                    } else if (!isOld && normalTaxableAtThr <= TAX.REBATE_NEW_LIMIT) {
+                        rebateAtThr = normalTaxAtThr;
+                    }
+                    const normalTaxAtThrAfterRebate = Math.max(0, normalTaxAtThr - rebateAtThr);
+                    
+                    // CG tax remains the same (CG amounts don't change)
+                    const cgTaxAtThr = totalCGTax;
+                    const totalTaxAtThr = normalTaxAtThrAfterRebate + cgTaxAtThr;
+                    
+                    // Surcharge at threshold (using previous rate)
+                    const surchargeAtThr = totalTaxAtThr * prevRate;
+                    
+                    // Total at threshold
+                    const totalAtThreshold = totalTaxAtThr + surchargeAtThr;
+                    
+                    // Current total
+                    const currentTotal = totalTaxBeforeSurcharge + totalSurcharge;
+                    
+                    // Excess income over threshold
+                    const excessIncome = totalTaxableIncome - threshold;
+                    
+                    // Marginal relief: current should not exceed threshold_total + excess
+                    const reliefNeeded = currentTotal - (totalAtThreshold + excessIncome);
+                    if (reliefNeeded > 0) {
+                        marginalRelief = Math.max(marginalRelief, reliefNeeded);
+                    }
+                }
+            }
+        }
+        
+        const netSurcharge = Math.max(0, totalSurcharge - marginalRelief);
+        
+        // ---- CESS ----
+        const cess = (totalTaxBeforeSurcharge + netSurcharge) * TAX.CESS_RATE;
+        
+        // ---- TOTAL TAX ----
+        const totalTax = totalTaxBeforeSurcharge + netSurcharge + cess;
+        const roundedTax = round10(totalTax); // Sec 288B
+        
+        return {
+            label,
+            // Income breakdown
+            salaryIncome: isOld ? salaryIncomeOld : salaryIncomeNew,
+            grossSalary,
+            hraExempt: isOld ? hraExempt : 0,
+            ltaExempt: isOld ? ltaExempt : 0,
+            stdDeduction: isOld ? TAX.STD_DED_OLD : TAX.STD_DED_NEW,
+            profTax: isOld ? profTax : 0,
+            interestIncome, otherIncome,
+            housePropertyIncome: hpIncome,
+            businessIncome,
+            stcgOther,
+            familyPension: famPension,
+            normalIncome: Math.max(0, isOld ? salaryIncomeOld : salaryIncomeNew) + interestIncome + otherIncome + hpIncome + businessIncome + stcgOther + famPension,
+            // Deductions
+            totalDeductions,
+            validEmployerNPS,
+            famPensionDeduction,
+            // Taxable
+            taxableNormal,
+            taxableTotal: totalTaxableIncome,
+            agriTaxAdjustment: agriTaxAdjustment || 0,
+            // CG
+            stcgEquity, ltcgEquityTaxable, ltcgOther,
+            // Tax
+            normalTax, rebate, normalTaxAfterRebate,
+            taxSTCGEquity, taxLTCGEquity, taxLTCGOther, totalCGTax,
+            totalTaxBeforeSurcharge,
+            baseSurchargeRate,
+            totalSurcharge, marginalRelief, netSurcharge,
+            cess,
+            totalTax,
+            roundedTax,
+            slabBreakdown: normalTaxResult.breakdown
+        };
+    }
+    
+    const oldResult = computeRegime(true);
+    const newResult = computeRegime(false);
+    
+    // ========== RENDER RESULTS ==========
+    const savings = oldResult.roundedTax - newResult.roundedTax;
+    let recommendClass, recommendText;
+    if (savings > 0) {
+        recommendClass = 'new-better';
+        recommendText = `✅ New Regime saves you <span class="save">${fmt(savings)}</span>`;
+    } else if (savings < 0) {
+        recommendClass = 'old-better';
+        recommendText = `✅ Old Regime saves you <span class="save">${fmt(-savings)}</span>`;
+    } else {
+        recommendClass = 'same';
+        recommendText = 'Both regimes result in the same tax liability.';
+    }
+    
+    function renderRegime(r, isRecommended) {
+        const recClass = isRecommended ? ' recommended' : '';
+        const badge = isRecommended ? ' <span class="badge green">RECOMMENDED</span>' : '';
+        const headerClass = r.label === 'Old' ? 'old' : 'new';
+        
+        let html = `<div class="regime-card${recClass}">`;
+        html += `<div class="regime-header ${headerClass}">${r.label} Regime${badge}</div>`;
+        html += `<div class="regime-body">`;
+        
+        // Income
+        html += row('Gross Salary', r.grossSalary);
+        if (r.label === 'Old') {
+            if (r.hraExempt > 0) html += row('Less: HRA Exemption', -r.hraExempt, 'indent');
+            if (r.ltaExempt > 0) html += row('Less: LTA Exempt', -r.ltaExempt, 'indent');
+            if (r.profTax > 0) html += row('Less: Professional Tax', -r.profTax, 'indent');
+        }
+        html += row(`Less: Standard Deduction`, -r.stdDeduction, 'indent');
+        html += row('Net Salary Income', Math.max(0, r.salaryIncome));
+        if (r.interestIncome) html += row('Interest Income', r.interestIncome);
+        if (r.otherIncome) html += row('Other Income', r.otherIncome);
+        if (r.familyPension) html += row('Family Pension', r.familyPension);
+        if (r.housePropertyIncome !== 0) html += row('House Property Income', r.housePropertyIncome);
+        if (r.businessIncome) html += row('Business Income', r.businessIncome);
+        if (r.stcgOther) html += row('STCG (Slab Rate)', r.stcgOther);
+        html += row('Gross Total Income (Normal)', r.normalIncome, '', true);
+        
+        if (r.totalDeductions > 0) {
+            html += row('Less: Deductions (Ch. VI-A)', -r.totalDeductions);
+        }
+        html += row('Taxable Income (Normal)', r.taxableNormal, '', true);
+        
+        // CG
+        if (r.stcgEquity > 0) html += row('STCG Equity (111A)', r.stcgEquity);
+        if (r.ltcgEquityTaxable > 0) html += row('LTCG Equity (112A, after ₹1.25L)', r.ltcgEquityTaxable);
+        if (r.ltcgOther > 0) html += row('LTCG Other (112)', r.ltcgOther);
+        
+        html += `<div style="margin:10px 0;border-top:2px dashed var(--border)"></div>`;
+        
+        // Tax computation
+        html += row('Tax on Normal Income (Slabs)', r.normalTax);
+        if (r.agriTaxAdjustment > 0) html += row('Incl. Agri Income Partial Integration', r.agriTaxAdjustment, 'indent');
+        if (r.rebate > 0) html += row('Less: Rebate u/s 87A', -r.rebate, 'indent');
+        html += row('Tax on Normal (after rebate)', r.normalTaxAfterRebate);
+        if (r.taxSTCGEquity > 0) html += row('Tax on STCG Equity @20%', r.taxSTCGEquity);
+        if (r.taxLTCGEquity > 0) html += row('Tax on LTCG Equity @12.5%', r.taxLTCGEquity);
+        if (r.taxLTCGOther > 0) html += row('Tax on LTCG Other @12.5%', r.taxLTCGOther);
+        html += row('Total Tax before Surcharge', r.totalTaxBeforeSurcharge, '', true);
+        
+        if (r.totalSurcharge > 0) {
+            html += row(`Surcharge (${(r.baseSurchargeRate*100).toFixed(0)}%)`, r.totalSurcharge);
+            if (r.marginalRelief > 0) html += row('Less: Marginal Relief', -r.marginalRelief, 'indent');
+            html += row('Net Surcharge', r.netSurcharge);
+        }
+        
+        html += row('Health & Education Cess @4%', r.cess);
+        html += row('Total Tax Liability', r.roundedTax, 'total');
+        
+        html += `</div></div>`;
+        return html;
+    }
+    
+    function row(label, value, cls='', bold=false) {
+        const style = bold ? 'font-weight:700' : '';
+        return `<div class="regime-row ${cls}" style="${style}"><span class="lbl">${label}</span><span class="val">${fmt(value)}</span></div>`;
+    }
+    
+    const isNewBetter = savings > 0;
+    const isOldBetter = savings < 0;
+    
+    let html = `<div class="recommend-box ${recommendClass}">${recommendText}</div>`;
+    html += `<div class="result-grid" style="margin-top:20px">`;
+    html += renderRegime(oldResult, isOldBetter);
+    html += renderRegime(newResult, isNewBetter);
+    html += `</div>`;
+    
+    // Disclaimer
+    html += `<div class="disclaimer">
+<strong>Disclaimer:</strong> This calculator is for estimation purposes only. It covers common income scenarios under both tax regimes for FY 2025-26 (AY 2026-27). 
+Tax computation involves numerous provisions, exemptions, and edge cases that may not be fully covered here. 
+Always consult a qualified Chartered Accountant for filing your return. Calculations are based on the Finance Act 2025 as applicable. 
+Tax amounts are rounded to the nearest ₹10 as per Section 288B. 
+Capital gains rates: STCG Equity (111A) @20%, LTCG Equity (112A) @12.5% (₹1.25L exempt), LTCG Non-Equity (112) @12.5%, STCG Non-Equity at slab rates.
+Surcharge: Old Regime max 37%, New Regime max 25%. Equity CG surcharge capped at 15%.
+<br><br><strong>MakeEazy</strong> — Making Tax Easy | Not a substitute for professional advice.
+</div>`;
+    
+    html += `<div class="btn-row no-print" style="justify-content:center;margin-top:16px">
+<button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save PDF</button>
+<button class="btn btn-outline" onclick="showTab(0)">← Edit Details</button>
+</div>`;
+    
+    document.getElementById('resultsContent').innerHTML = html;
+    showTab(6);
+}
+</script>
+</body>
+</html>

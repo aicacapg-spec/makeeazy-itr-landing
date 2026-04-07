@@ -1,0 +1,12 @@
+# Ignore everything by default
+*
+
+# Allow only landing page files
+!.gitignore
+!index.html
+!styles.css
+!script.js
+!calculator.html
+!hero-illustration.png
+!expert-avatars.png
+!trust-badges.png
