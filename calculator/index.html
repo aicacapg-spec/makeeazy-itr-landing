@@ -1285,6 +1285,63 @@ Employer NPS (80CCD(2)): 14% of salary for all employers from FY 2025-26.
     showToast('✅ Tax computed successfully!', 'success');
     markFilledInputs();
 }
+
+// ===================== PRE-FILL FROM UPLOAD =====================
+(function loadFromUpload() {
+    const raw = localStorage.getItem('makeeazy_upload_data');
+    if (!raw) return;
+    try {
+        const d = JSON.parse(raw);
+        if (!d._fromUpload) return;
+        
+        const fieldMap = {
+            basicSalary: d.basicSalary, da: d.da, hra: d.hra,
+            specialAllowance: d.specialAllowance, lta: d.lta,
+            profTax: d.profTax, rentPaid: d.rentPaid,
+            interestIncome: d.interestIncome, otherIncome: d.otherIncome,
+            dividendIncome: d.dividendIncome, familyPension: d.familyPension,
+            letOutRent: d.letOutRent, municipalTax: d.municipalTax,
+            homeLoanLetOut: d.loanInterestLetOut, homeLoanSOP: d.sopInterest,
+            stcgEquity: d.stcgEquity, stcgOther: d.stcgOther,
+            ltcgEquity: d.ltcgEquity, ltcgOther: d.ltcgOther,
+            sec80C: d.sec80C, sec80CCD1B: d.sec80CCD1B,
+            employerNPS: d.employerNPS,
+            healthInsSelf: d.healthSelf, healthInsParents: d.healthParents,
+            sec80E: d.sec80E, sec80G: d.sec80GAmount,
+            sec80TTA: d.sec80TTA, sec80DDB: d.sec80DDB
+        };
+        
+        for (const [id, val] of Object.entries(fieldMap)) {
+            const el = document.getElementById(id);
+            if (el && val) { el.value = val; }
+        }
+        if (d.assesseeName) {
+            const nameEl = document.getElementById('assesseeName');
+            if (nameEl) nameEl.value = d.assesseeName;
+        }
+        if (d.pan) {
+            const panEl = document.getElementById('pan');
+            if (panEl) panEl.value = d.pan;
+        }
+        if (d.sopInterest > 0) {
+            const sopEl = document.getElementById('hasSOP');
+            if (sopEl) sopEl.value = 'yes';
+        }
+        
+        // Show banner
+        const banner = document.createElement('div');
+        banner.style.cssText = 'background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:14px 20px;margin:0 32px 0;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#166534;animation:fadeSlideIn .5s ease';
+        banner.innerHTML = '🤖 <span>Data loaded from AI analysis — please review and adjust if needed. <a href="../upload/" style="color:#32509F;text-decoration:underline">Re-upload</a></span><button onclick="this.parentElement.remove();localStorage.removeItem(\'makeeazy_upload_data\')" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:#64748B">✕</button>';
+        const tabsEl = document.querySelector('.tabs');
+        tabsEl.parentNode.insertBefore(banner, tabsEl.nextSibling);
+        
+        markFilledInputs();
+        showToast('📄 AI-extracted data loaded!', 'success');
+        
+        // Clear after load so it doesn't reload on refresh
+        localStorage.removeItem('makeeazy_upload_data');
+    } catch(e) { console.error('Upload prefill error:', e); }
+})();
 </script>
 </body>
 </html>

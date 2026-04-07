@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Upload Form 16, bank statements, AIS/TIS documents. AI extracts your income data automatically for instant tax estimation.">
+<title>Smart Document Upload | MakeEazy Tax Analyzer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--navy:#32509F;--navy-dark:#1a2d6b;--tint:#DDE6FF;--tint-light:#EEF2FF;--orange:#F77F00;--orange-hover:#d96c00;--bg:#f0f2f7;--card:#fff;--text:#1a2d5e;--muted:#64748B;--green:#16a34a;--red:#dc2626;--border:#e2e8f0;--radius:12px;--shadow:0 4px 24px rgba(50,80,159,.08)}
+body{font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding:16px;min-height:100vh}
+.container{max-width:960px;margin:0 auto;background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.header{background:linear-gradient(135deg,var(--navy),var(--navy-dark));color:#fff;padding:28px 32px;text-align:center;position:relative}
+.header h1{font-size:22px;font-weight:800;letter-spacing:-0.3px}
+.header .sub{font-size:13px;opacity:.8;margin-top:4px}
+.header .back-link{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600;transition:.2s}
+.header .back-link:hover{color:#fff}
+.content{padding:28px 32px}
+/* Steps indicator */
+.steps{display:flex;gap:0;margin-bottom:28px;position:relative}
+.step{flex:1;text-align:center;position:relative;padding-bottom:12px}
+.step::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:var(--tint);border-radius:4px}
+.step.active::after{background:linear-gradient(90deg,var(--navy),var(--orange))}
+.step.done::after{background:var(--green)}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--tint);color:var(--navy);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;margin-bottom:4px;transition:.3s}
+.step.active .step-num{background:var(--navy);color:#fff;box-shadow:0 4px 12px rgba(50,80,159,.3)}
+.step.done .step-num{background:var(--green);color:#fff}
+.step-label{font-size:11px;font-weight:700;color:var(--muted)}
+.step.active .step-label{color:var(--navy)}
+.step.done .step-label{color:var(--green)}
+/* Upload zone */
+.upload-zone{border:2.5px dashed var(--border);border-radius:16px;padding:48px 32px;text-align:center;cursor:pointer;transition:all .3s ease;background:var(--tint-light);position:relative}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--navy);background:var(--tint);transform:scale(1.01)}
+.upload-zone.dragover{box-shadow:0 0 0 4px rgba(50,80,159,.15)}
+.upload-icon{font-size:48px;margin-bottom:12px;display:block}
+.upload-title{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.upload-hint{font-size:13px;color:var(--muted);margin-bottom:16px}
+.upload-btn{display:inline-block;padding:10px 24px;background:var(--navy);color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;border:none;font-family:inherit}
+.upload-btn:hover{background:var(--navy-dark);transform:translateY(-1px)}
+.upload-formats{font-size:11px;color:var(--muted);margin-top:16px}
+#fileInput{display:none}
+/* File list */
+.file-list{margin-top:20px}
+.file-card{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--tint-light);border-radius:12px;margin-bottom:10px;animation:fadeIn .3s ease;border:1.5px solid var(--border);transition:.2s}
+.file-card:hover{border-color:var(--navy)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.file-icon{font-size:28px;flex-shrink:0}
+.file-info{flex:1;min-width:0}
+.file-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-meta{font-size:11px;color:var(--muted)}
+.file-type-select{padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;background:white;cursor:pointer}
+.file-remove{width:28px;height:28px;border-radius:8px;border:none;background:var(--red);color:#fff;cursor:pointer;font-size:14px;font-weight:700;transition:.2s;flex-shrink:0}
+.file-remove:hover{background:#b91c1c;transform:scale(1.1)}
+/* Analyze button */
+.btn-row{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+.btn{padding:12px 28px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all .25s ease;font-family:inherit}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navy-dark);transform:translateY(-2px);box-shadow:0 4px 16px rgba(50,80,159,.25)}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-orange:hover{background:var(--orange-hover);transform:translateY(-2px);box-shadow:0 4px 16px rgba(247,127,0,.3)}
+.btn-outline{background:#fff;color:var(--navy);border:2px solid var(--navy)}
+.btn-outline:hover{background:var(--tint-light)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+/* Processing overlay */
+.processing{display:none;text-align:center;padding:40px 20px}
+.processing.active{display:block}
+.spinner{width:48px;height:48px;border:4px solid var(--tint);border-top-color:var(--navy);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.processing h3{font-size:18px;color:var(--navy);margin-bottom:8px}
+.processing .status{font-size:13px;color:var(--muted)}
+.progress-outer{height:6px;background:var(--tint);border-radius:6px;margin:16px auto;max-width:400px;overflow:hidden}
+.progress-inner{height:100%;background:linear-gradient(90deg,var(--navy),var(--orange));border-radius:6px;transition:width .5s ease;width:0}
+/* Review section */
+.review-section{display:none}
+.review-section.active{display:block}
+.review-banner{background:var(--tint-light);border:2px solid var(--navy);border-radius:12px;padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--navy)}
+.review-banner .icon{font-size:24px}
+.category-card{border:1.5px solid var(--border);border-radius:12px;margin-bottom:16px;overflow:hidden;transition:.2s}
+.category-card:hover{border-color:var(--navy)}
+.category-header{background:var(--tint-light);padding:12px 18px;font-size:14px;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:8px;cursor:pointer}
+.category-header .arrow{transition:.3s;font-size:12px}
+.category-header.collapsed .arrow{transform:rotate(-90deg)}
+.category-body{padding:14px 18px}
+.category-body.collapsed{display:none}
+.field-row{display:grid;grid-template-columns:1fr 180px;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6}
+.field-row:last-child{border:none}
+.field-label{font-size:13px;font-weight:600;color:var(--text)}
+.field-label small{font-weight:400;color:var(--muted);display:block;font-size:11px}
+.field-input{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;text-align:right;font-family:'Inter',monospace;transition:.2s}
+.field-input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(50,80,159,.1)}
+.field-input.ai-filled{border-color:var(--green);background:#f0fdf4}
+/* Suggestion box */
+.suggestion-box{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:2px solid var(--green);border-radius:12px;padding:18px 22px;margin-top:20px}
+.suggestion-box h3{font-size:15px;color:var(--green);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.suggestion-box p{font-size:13px;color:#166534;line-height:1.7}
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy-dark);color:#fff;padding:14px 24px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:999;animation:toastIn .4s ease;display:flex;align-items:center;gap:8px}
+.toast.success{background:var(--green)}
+.toast.warn{background:var(--orange)}
+.toast.error{background:var(--red)}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* Mobile */
+@media(max-width:600px){
+.header h1{font-size:17px}
+.header .back-link{position:static;display:block;margin-bottom:8px;text-align:left}
+.content{padding:18px 16px}
+.upload-zone{padding:32px 16px}
+.field-row{grid-template-columns:1fr 140px}
+.steps{gap:4px}
+.step-label{font-size:9px}
+}
+/* Print hide */
+@media print{.header .back-link,.btn-row{display:none!important}}
+/* Watermark */
+.watermark{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(0,0,0,.06);font-weight:800;letter-spacing:2px;pointer-events:none;user-select:none}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<a href="../" class="back-link">← Back to Main Site</a>
+<h1>📄 Smart Document Upload</h1>
+<div class="sub">Upload your tax documents — AI extracts everything automatically</div>
+</div>
+
+<div class="content">
+<!-- Steps -->
+<div class="steps">
+<div class="step active" id="step1">
+<div class="step-num">1</div>
+<div class="step-label">Upload</div>
+</div>
+<div class="step" id="step2">
+<div class="step-num">2</div>
+<div class="step-label">AI Analysis</div>
+</div>
+<div class="step" id="step3">
+<div class="step-num">3</div>
+<div class="step-label">Review & Edit</div>
+</div>
+<div class="step" id="step4">
+<div class="step-num">4</div>
+<div class="step-label">Calculate</div>
+</div>
+</div>
+
+<!-- Step 1: Upload -->
+<div id="uploadSection">
+<div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+<span class="upload-icon">📁</span>
+<div class="upload-title">Drop your documents here</div>
+<div class="upload-hint">or click to browse files</div>
+<button class="upload-btn" onclick="event.stopPropagation();document.getElementById('fileInput').click()">Choose Files</button>
+<div class="upload-formats">Supports: PDF, JPG, PNG • Form 16, Bank Statement, AIS, TIS, 26AS, Salary Slips</div>
+</div>
+<input type="file" id="fileInput" multiple accept=".pdf,.jpg,.jpeg,.png,.webp">
+
+<div class="file-list" id="fileList"></div>
+
+<div class="btn-row" id="uploadActions" style="display:none">
+<button class="btn btn-orange" id="analyzeBtn" onclick="startAnalysis()">🤖 Analyze with AI</button>
+<button class="btn btn-outline" onclick="clearAll()">Clear All</button>
+</div>
+</div>
+
+<!-- Step 2: Processing -->
+<div class="processing" id="processingSection">
+<div class="spinner"></div>
+<h3 id="processingTitle">Analyzing your documents...</h3>
+<div class="status" id="processingStatus">Preparing files...</div>
+<div class="progress-outer"><div class="progress-inner" id="processingProgress"></div></div>
+</div>
+
+<!-- Step 3: Review -->
+<div class="review-section" id="reviewSection">
+<div class="review-banner">
+<span class="icon">🤖</span>
+<span>AI has extracted the following data from your documents. Please review and edit if needed.</span>
+</div>
+
+<div id="reviewContent"></div>
+
+<div id="itrSuggestion"></div>
+
+<div class="btn-row">
+<button class="btn btn-orange" onclick="sendToCalculator()">📊 Send to Tax Calculator</button>
+<button class="btn btn-outline" onclick="reAnalyze()">🔄 Re-analyze</button>
+<button class="btn btn-outline" onclick="resetAll()">← Start Over</button>
+</div>
+</div>
+</div>
+</div>
+<div class="watermark">MAKEEAZY.IN</div>
+
+<script>
+// ===================== SECURITY =====================
+(function(){
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',function(e){
+if(e.key==='F12')e.preventDefault();
+if(e.ctrlKey&&e.shiftKey&&'IJCijc'.includes(e.key))e.preventDefault();
+if(e.ctrlKey&&'uUsS'.includes(e.key)){e.preventDefault();}
+});
+document.addEventListener('dragstart',e=>{if(e.target.tagName!=='IMG')return;e.preventDefault();});
+})();
+
+// ===================== API CONFIG =====================
+const _p=[
+'QUl6YVN5RElBNWhj','UmlPbXo5QkdpOU5P','cDg0Xzk4MENwR2kt','d2N3'];
+function _k(){return atob(_p[0])+atob(_p[1])+atob(_p[2])+atob(_p[3]);}
+const API_MODEL='gemini-2.0-flash';
+
+// ===================== STATE =====================
+let uploadedFiles = [];
+let extractedData = {};
+
+// ===================== FILE HANDLING =====================
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+function handleFiles(fileList) {
+    for (const file of fileList) {
+        if (uploadedFiles.length >= 10) { toast('Maximum 10 files allowed','warn'); break; }
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!['pdf','jpg','jpeg','png','webp'].includes(ext)) {
+            toast(`${file.name}: Unsupported format`,'error');
+            continue;
+        }
+        if (file.size > 20 * 1024 * 1024) {
+            toast(`${file.name}: File too large (max 20MB)`,'error');
+            continue;
+        }
+        const docType = guessDocType(file.name);
+        uploadedFiles.push({ file, docType, id: Date.now() + Math.random() });
+    }
+    renderFileList();
+    fileInput.value = '';
+}
+
+function guessDocType(name) {
+    const n = name.toLowerCase();
+    if (n.includes('form16') || n.includes('form 16') || n.includes('f16') || n.includes('form-16')) return 'form16';
+    if (n.includes('ais')) return 'ais';
+    if (n.includes('tis')) return 'tis';
+    if (n.includes('26as') || n.includes('26 as')) return '26as';
+    if (n.includes('bank') || n.includes('statement') || n.includes('passbook')) return 'bank';
+    if (n.includes('salary') || n.includes('payslip') || n.includes('slip')) return 'salary';
+    if (n.includes('interest') || n.includes('fd') || n.includes('deposit')) return 'interest';
+    return 'form16';
+}
+
+function renderFileList() {
+    const el = document.getElementById('fileList');
+    if (uploadedFiles.length === 0) { el.innerHTML = ''; document.getElementById('uploadActions').style.display = 'none'; return; }
+    document.getElementById('uploadActions').style.display = 'flex';
+    el.innerHTML = uploadedFiles.map((f, i) => `
+<div class="file-card">
+<span class="file-icon">${f.file.type.includes('pdf') ? '📄' : '🖼️'}</span>
+<div class="file-info">
+<div class="file-name">${f.file.name}</div>
+<div class="file-meta">${(f.file.size/1024).toFixed(0)} KB</div>
+</div>
+<select class="file-type-select" onchange="uploadedFiles[${i}].docType=this.value">
+<option value="form16" ${f.docType==='form16'?'selected':''}>Form 16</option>
+<option value="bank" ${f.docType==='bank'?'selected':''}>Bank Statement</option>
+<option value="ais" ${f.docType==='ais'?'selected':''}>AIS</option>
+<option value="tis" ${f.docType==='tis'?'selected':''}>TIS</option>
+<option value="26as" ${f.docType==='26as'?'selected':''}>Form 26AS</option>
+<option value="salary" ${f.docType==='salary'?'selected':''}>Salary Slip</option>
+<option value="interest" ${f.docType==='interest'?'selected':''}>Interest Certificate</option>
+<option value="other" ${f.docType==='other'?'selected':''}>Other</option>
+</select>
+<button class="file-remove" onclick="removeFile(${i})" title="Remove">✕</button>
+</div>`).join('');
+}
+
+function removeFile(idx) {
+    uploadedFiles.splice(idx, 1);
+    renderFileList();
+}
+
+function clearAll() {
+    uploadedFiles = [];
+    renderFileList();
+}
+
+// ===================== AI ANALYSIS =====================
+async function startAnalysis() {
+    if (uploadedFiles.length === 0) return toast('Please upload at least one document','warn');
+    
+    setStep(2);
+    document.getElementById('uploadSection').style.display = 'none';
+    document.getElementById('processingSection').classList.add('active');
+    
+    extractedData = {
+        personalInfo: { name: '', pan: '', employerName: '', tan: '' },
+        salary: { basic: 0, hra: 0, da: 0, specialAllowances: 0, lta: 0, otherAllowances: 0, grossSalary: 0, professionalTax: 0 },
+        otherIncome: { interestSavings: 0, interestFD: 0, interestOther: 0, dividend: 0, otherIncome: 0, familyPension: 0 },
+        houseProperty: { rentalIncome: 0, municipalTax: 0, homeLoanInterestSOP: 0, homeLoanInterestLetOut: 0 },
+        capitalGains: { stcgEquity: 0, stcgOther: 0, ltcgEquity: 0, ltcgOther: 0 },
+        business: { grossReceipts: 0, presumptiveIncome: 0, netProfit: 0 },
+        deductions: { sec80C: 0, sec80CCD1B: 0, sec80D_self: 0, sec80D_parents: 0, sec80E: 0, sec80G: 0, sec80GG: 0, sec80TTA: 0, sec80DDB: 0, employerNPS: 0 },
+        taxPaid: { tdsTotal: 0, advanceTax: 0, selfAssessmentTax: 0 },
+        _sources: []
+    };
+    
+    let processed = 0;
+    for (const uf of uploadedFiles) {
+        const pct = Math.round((processed / uploadedFiles.length) * 100);
+        updateProgress(pct, `Analyzing ${uf.file.name}...`);
+        
+        try {
+            const base64 = await fileToBase64(uf.file);
+            const mimeType = uf.file.type || (uf.file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+            const result = await callGemini(base64, mimeType, uf.docType);
+            mergeExtractedData(result, uf.docType, uf.file.name);
+            extractedData._sources.push({ name: uf.file.name, type: uf.docType, status: 'success' });
+        } catch (err) {
+            console.error('Error analyzing', uf.file.name, err);
+            extractedData._sources.push({ name: uf.file.name, type: uf.docType, status: 'error', error: err.message });
+            toast(`Error: ${uf.file.name} - ${err.message}`, 'error');
+        }
+        processed++;
+    }
+    
+    updateProgress(100, 'Analysis complete!');
+    setTimeout(() => {
+        document.getElementById('processingSection').classList.remove('active');
+        showReview();
+    }, 800);
+}
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+function updateProgress(pct, text) {
+    document.getElementById('processingProgress').style.width = pct + '%';
+    document.getElementById('processingStatus').textContent = text;
+}
+
+async function callGemini(base64Data, mimeType, docType) {
+    const prompt = buildPrompt(docType);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${_k()}`;
+    
+    const body = {
+        contents: [{
+            parts: [
+                { text: prompt },
+                { inline_data: { mime_type: mimeType, data: base64Data } }
+            ]
+        }],
+        generationConfig: {
+            temperature: 0.1,
+            responseMimeType: "application/json"
+        }
+    };
+    
+    const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    
+    if (!resp.ok) {
+        const err = await resp.text();
+        throw new Error(`API error ${resp.status}: ${err.substring(0, 200)}`);
+    }
+    
+    const data = await resp.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('No response from AI');
+    
+    try {
+        return JSON.parse(text);
+    } catch {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) return JSON.parse(jsonMatch[0]);
+        throw new Error('Could not parse AI response');
+    }
+}
+
+function buildPrompt(docType) {
+    const base = `You are an expert Indian Chartered Accountant analyzing a tax document for FY 2025-26.
+Extract ALL financial data from this document into a structured JSON format.
+Use ANNUAL amounts (not monthly). All amounts in INR (no commas, no symbols, just numbers).
+If a field is not found or not applicable, use 0.
+Be precise — these numbers will be used for tax computation.
+
+Return ONLY valid JSON with this exact structure:`;
+
+    const structures = {
+        form16: `{
+  "personalInfo": { "name": "", "pan": "", "employerName": "", "tan": "" },
+  "salary": {
+    "basic": 0, "hra": 0, "da": 0, "specialAllowances": 0, "lta": 0,
+    "otherAllowances": 0, "grossSalary": 0, "professionalTax": 0,
+    "standardDeduction": 0, "entertainmentAllowance": 0
+  },
+  "hraCalculation": { "hraReceived": 0, "rentPaid": 0, "hraExempt": 0 },
+  "otherIncome": { "interestSavings": 0, "interestFD": 0, "interestOther": 0, "otherIncome": 0 },
+  "houseProperty": { "rentalIncome": 0, "homeLoanInterestSOP": 0, "homeLoanInterestLetOut": 0 },
+  "deductions": {
+    "sec80C": 0, "sec80CCC": 0, "sec80CCD1": 0, "sec80CCD1B": 0, "sec80CCD2": 0,
+    "sec80D_self": 0, "sec80D_parents": 0, "sec80E": 0, "sec80G": 0,
+    "sec80TTA": 0, "sec80TTB": 0, "sec80DDB": 0, "sec80DD": 0, "sec80U": 0,
+    "totalDeductions": 0
+  },
+  "taxComputation": {
+    "totalIncome": 0, "taxPayable": 0, "rebate87A": 0, "surcharge": 0,
+    "cess": 0, "totalTaxLiability": 0, "tdsDeducted": 0, "refundDue": 0
+  }
+}`,
+        bank: `{
+  "accountHolder": "",
+  "bankName": "",
+  "interestEarned": { "savingsInterest": 0, "fdInterest": 0, "rdInterest": 0, "totalInterest": 0 },
+  "highValueTransactions": { "totalCredits": 0, "totalDebits": 0 },
+  "dividendCredits": 0,
+  "rentReceived": 0,
+  "remarks": ""
+}`,
+        ais: `{
+  "salary": 0,
+  "interestFromSavings": 0,
+  "interestFromDeposits": 0,
+  "interestFromOthers": 0,
+  "dividendIncome": 0,
+  "rentReceived": 0,
+  "saleOfSecurities": 0,
+  "purchaseOfSecurities": 0,
+  "saleOfImmovableProperty": 0,
+  "businessReceipts": 0,
+  "cashDeposits": 0,
+  "tdsTotal": 0,
+  "tcsTotal": 0
+}`,
+        tis: `{
+  "salary": { "reported": 0, "processed": 0 },
+  "interestFromSavings": { "reported": 0, "processed": 0 },
+  "interestFromDeposits": { "reported": 0, "processed": 0 },
+  "dividendIncome": { "reported": 0, "processed": 0 },
+  "saleOfSecurities": { "reported": 0, "processed": 0 },
+  "rentReceived": { "reported": 0, "processed": 0 },
+  "businessReceipts": { "reported": 0, "processed": 0 }
+}`,
+        '26as': `{
+  "tdsOnSalary": 0,
+  "tdsOnOtherIncome": 0,
+  "tcsCollected": 0,
+  "advanceTaxPaid": 0,
+  "selfAssessmentTax": 0,
+  "refundReceived": 0,
+  "totalTDS": 0
+}`,
+        salary: `{
+  "month": "",
+  "basic": 0, "hra": 0, "da": 0, "specialAllowance": 0,
+  "grossEarnings": 0, "pf": 0, "professionalTax": 0, "tds": 0,
+  "netPay": 0
+}`,
+        interest: `{
+  "bankName": "", "interestEarned": 0, "tdsDeducted": 0
+}`,
+        other: `{
+  "description": "",
+  "incomeAmount": 0,
+  "tdsDeducted": 0,
+  "remarks": ""
+}`
+    };
+
+    return base + '\n\n' + (structures[docType] || structures.other);
+}
+
+function mergeExtractedData(result, docType, fileName) {
+    const d = extractedData;
+    
+    if (docType === 'form16') {
+        if (result.personalInfo) {
+            if (result.personalInfo.name) d.personalInfo.name = result.personalInfo.name;
+            if (result.personalInfo.pan) d.personalInfo.pan = result.personalInfo.pan;
+            if (result.personalInfo.employerName) d.personalInfo.employerName = result.personalInfo.employerName;
+            if (result.personalInfo.tan) d.personalInfo.tan = result.personalInfo.tan;
+        }
+        if (result.salary) {
+            d.salary.basic = Math.max(d.salary.basic, n(result.salary.basic));
+            d.salary.hra = Math.max(d.salary.hra, n(result.salary.hra));
+            d.salary.da = Math.max(d.salary.da, n(result.salary.da));
+            d.salary.specialAllowances = Math.max(d.salary.specialAllowances, n(result.salary.specialAllowances));
+            d.salary.lta = Math.max(d.salary.lta, n(result.salary.lta));
+            d.salary.grossSalary = Math.max(d.salary.grossSalary, n(result.salary.grossSalary));
+            d.salary.professionalTax = Math.max(d.salary.professionalTax, n(result.salary.professionalTax));
+        }
+        if (result.deductions) {
+            d.deductions.sec80C = Math.max(d.deductions.sec80C, n(result.deductions.sec80C));
+            d.deductions.sec80CCD1B = Math.max(d.deductions.sec80CCD1B, n(result.deductions.sec80CCD1B));
+            d.deductions.sec80D_self = Math.max(d.deductions.sec80D_self, n(result.deductions.sec80D_self));
+            d.deductions.sec80D_parents = Math.max(d.deductions.sec80D_parents, n(result.deductions.sec80D_parents));
+            d.deductions.sec80E = Math.max(d.deductions.sec80E, n(result.deductions.sec80E));
+            d.deductions.sec80G = Math.max(d.deductions.sec80G, n(result.deductions.sec80G));
+            d.deductions.sec80TTA = Math.max(d.deductions.sec80TTA, n(result.deductions.sec80TTA || result.deductions.sec80TTB));
+            d.deductions.sec80DDB = Math.max(d.deductions.sec80DDB, n(result.deductions.sec80DDB));
+            d.deductions.employerNPS = Math.max(d.deductions.employerNPS, n(result.deductions.sec80CCD2));
+        }
+        if (result.otherIncome) {
+            d.otherIncome.interestSavings += n(result.otherIncome.interestSavings);
+            d.otherIncome.interestFD += n(result.otherIncome.interestFD);
+        }
+        if (result.houseProperty) {
+            d.houseProperty.homeLoanInterestSOP = Math.max(d.houseProperty.homeLoanInterestSOP, n(result.houseProperty.homeLoanInterestSOP));
+        }
+        if (result.taxComputation) {
+            d.taxPaid.tdsTotal = Math.max(d.taxPaid.tdsTotal, n(result.taxComputation.tdsDeducted));
+        }
+    }
+    else if (docType === 'bank') {
+        if (result.interestEarned) {
+            d.otherIncome.interestSavings += n(result.interestEarned.savingsInterest);
+            d.otherIncome.interestFD += n(result.interestEarned.fdInterest) + n(result.interestEarned.rdInterest);
+        }
+        d.otherIncome.dividend += n(result.dividendCredits);
+        d.houseProperty.rentalIncome += n(result.rentReceived);
+    }
+    else if (docType === 'ais' || docType === 'tis') {
+        const get = (v) => typeof v === 'object' ? n(v.processed || v.reported) : n(v);
+        if (get(result.salary) > d.salary.grossSalary) d.salary.grossSalary = get(result.salary);
+        d.otherIncome.interestSavings = Math.max(d.otherIncome.interestSavings, get(result.interestFromSavings));
+        d.otherIncome.interestFD = Math.max(d.otherIncome.interestFD, get(result.interestFromDeposits));
+        d.otherIncome.interestOther = Math.max(d.otherIncome.interestOther, get(result.interestFromOthers));
+        d.otherIncome.dividend = Math.max(d.otherIncome.dividend, get(result.dividendIncome));
+        d.houseProperty.rentalIncome = Math.max(d.houseProperty.rentalIncome, get(result.rentReceived));
+        if (n(result.tdsTotal)) d.taxPaid.tdsTotal = Math.max(d.taxPaid.tdsTotal, n(result.tdsTotal));
+    }
+    else if (docType === '26as') {
+        d.taxPaid.tdsTotal = Math.max(d.taxPaid.tdsTotal, n(result.totalTDS || result.tdsOnSalary));
+        d.taxPaid.advanceTax += n(result.advanceTaxPaid);
+        d.taxPaid.selfAssessmentTax += n(result.selfAssessmentTax);
+    }
+    else if (docType === 'salary') {
+        // Monthly salary slip — annualize
+        d.salary.basic = Math.max(d.salary.basic, n(result.basic) * 12);
+        d.salary.hra = Math.max(d.salary.hra, n(result.hra) * 12);
+        d.salary.da = Math.max(d.salary.da, n(result.da) * 12);
+        d.salary.specialAllowances = Math.max(d.salary.specialAllowances, n(result.specialAllowance) * 12);
+    }
+    else if (docType === 'interest') {
+        d.otherIncome.interestFD += n(result.interestEarned);
+    }
+}
+
+function n(v) { return parseFloat(v) || 0; }
+
+// ===================== REVIEW SCREEN =====================
+function showReview() {
+    setStep(3);
+    document.getElementById('reviewSection').classList.add('active');
+    renderReview();
+}
+
+function renderReview() {
+    const d = extractedData;
+    let html = '';
+    
+    // Sources summary
+    const okCount = d._sources.filter(s => s.status === 'success').length;
+    const errCount = d._sources.filter(s => s.status === 'error').length;
+    html += `<div style="margin-bottom:16px;font-size:12px;color:var(--muted)">
+📊 Analyzed ${okCount} document${okCount!==1?'s':''} successfully${errCount?` • ${errCount} failed`:''}</div>`;
+    
+    // Personal Info
+    if (d.personalInfo.name || d.personalInfo.pan) {
+        html += categoryCard('👤 Personal Information', [
+            field('Name', 'personalInfo.name', d.personalInfo.name, 'text'),
+            field('PAN', 'personalInfo.pan', d.personalInfo.pan, 'text'),
+            field('Employer', 'personalInfo.employerName', d.personalInfo.employerName, 'text'),
+        ]);
+    }
+    
+    // Salary
+    html += categoryCard('💼 Salary Income', [
+        field('Basic Salary', 'salary.basic', d.salary.basic),
+        field('HRA', 'salary.hra', d.salary.hra),
+        field('Dearness Allowance', 'salary.da', d.salary.da),
+        field('Special Allowances', 'salary.specialAllowances', d.salary.specialAllowances),
+        field('LTA', 'salary.lta', d.salary.lta),
+        field('Gross Salary', 'salary.grossSalary', d.salary.grossSalary),
+        field('Professional Tax', 'salary.professionalTax', d.salary.professionalTax),
+    ]);
+    
+    // Other Income
+    html += categoryCard('💰 Other Income', [
+        field('Interest — Savings', 'otherIncome.interestSavings', d.otherIncome.interestSavings),
+        field('Interest — FD/RD', 'otherIncome.interestFD', d.otherIncome.interestFD),
+        field('Interest — Other', 'otherIncome.interestOther', d.otherIncome.interestOther),
+        field('Dividend Income', 'otherIncome.dividend', d.otherIncome.dividend),
+        field('Family Pension', 'otherIncome.familyPension', d.otherIncome.familyPension),
+        field('Other Income', 'otherIncome.otherIncome', d.otherIncome.otherIncome),
+    ]);
+    
+    // House Property
+    html += categoryCard('🏠 House Property', [
+        field('Rental Income (Annual)', 'houseProperty.rentalIncome', d.houseProperty.rentalIncome),
+        field('Municipal Tax Paid', 'houseProperty.municipalTax', d.houseProperty.municipalTax),
+        field('Home Loan Interest (SOP)', 'houseProperty.homeLoanInterestSOP', d.houseProperty.homeLoanInterestSOP),
+        field('Home Loan Interest (Let Out)', 'houseProperty.homeLoanInterestLetOut', d.houseProperty.homeLoanInterestLetOut),
+    ]);
+    
+    // Capital Gains
+    html += categoryCard('📈 Capital Gains', [
+        field('STCG — Equity (111A)', 'capitalGains.stcgEquity', d.capitalGains.stcgEquity),
+        field('STCG — Other', 'capitalGains.stcgOther', d.capitalGains.stcgOther),
+        field('LTCG — Equity (112A)', 'capitalGains.ltcgEquity', d.capitalGains.ltcgEquity),
+        field('LTCG — Other (112)', 'capitalGains.ltcgOther', d.capitalGains.ltcgOther),
+    ]);
+    
+    // Deductions
+    html += categoryCard('📋 Deductions (Chapter VI-A)', [
+        field('Section 80C', 'deductions.sec80C', d.deductions.sec80C),
+        field('Section 80CCD(1B) — NPS', 'deductions.sec80CCD1B', d.deductions.sec80CCD1B),
+        field('Employer NPS — 80CCD(2)', 'deductions.employerNPS', d.deductions.employerNPS),
+        field('Section 80D — Self', 'deductions.sec80D_self', d.deductions.sec80D_self),
+        field('Section 80D — Parents', 'deductions.sec80D_parents', d.deductions.sec80D_parents),
+        field('Section 80E — Education Loan', 'deductions.sec80E', d.deductions.sec80E),
+        field('Section 80G — Donations', 'deductions.sec80G', d.deductions.sec80G),
+        field('Section 80TTA/TTB', 'deductions.sec80TTA', d.deductions.sec80TTA),
+    ]);
+    
+    // Tax Paid
+    html += categoryCard('💳 Tax Already Paid', [
+        field('Total TDS', 'taxPaid.tdsTotal', d.taxPaid.tdsTotal),
+        field('Advance Tax', 'taxPaid.advanceTax', d.taxPaid.advanceTax),
+        field('Self Assessment Tax', 'taxPaid.selfAssessmentTax', d.taxPaid.selfAssessmentTax),
+    ]);
+    
+    document.getElementById('reviewContent').innerHTML = html;
+    
+    // ITR suggestion
+    suggestITR();
+}
+
+function categoryCard(title, fields) {
+    return `<div class="category-card">
+<div class="category-header" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('collapsed')">
+<span class="arrow">▼</span> ${title}
+</div>
+<div class="category-body">${fields.join('')}</div>
+</div>`;
+}
+
+function field(label, key, value, type='number') {
+    const hasValue = type === 'number' ? n(value) > 0 : (value && value.length > 0);
+    return `<div class="field-row">
+<div class="field-label">${label}</div>
+<input class="field-input ${hasValue ? 'ai-filled' : ''}" 
+type="${type}" data-key="${key}" 
+value="${type === 'number' ? n(value) : (value || '')}" 
+${type === 'number' ? 'min="0" step="1"' : ''}
+onchange="updateField('${key}', this.value, '${type}')">
+</div>`;
+}
+
+function updateField(key, value, type) {
+    const parts = key.split('.');
+    let obj = extractedData;
+    for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+    obj[parts[parts.length - 1]] = type === 'number' ? n(value) : value;
+}
+
+function suggestITR() {
+    const d = extractedData;
+    const hasSalary = d.salary.grossSalary > 0;
+    const hasBusiness = d.business.grossReceipts > 0 || d.business.netProfit > 0;
+    const hasCG = d.capitalGains.stcgEquity > 0 || d.capitalGains.ltcgEquity > 0 || d.capitalGains.ltcgOther > 0 || d.capitalGains.stcgOther > 0;
+    const hasMultipleHP = d.houseProperty.rentalIncome > 0 && d.houseProperty.homeLoanInterestLetOut > 0;
+    const hasOther = d.otherIncome.interestSavings > 0 || d.otherIncome.interestFD > 0 || d.otherIncome.dividend > 0;
+    
+    let itrType, reason;
+    if (hasBusiness && hasCG) {
+        itrType = 'ITR-3'; reason = 'You have business/professional income AND capital gains. ITR-3 covers both.';
+    } else if (hasBusiness) {
+        itrType = 'ITR-4 (Sugam)'; reason = 'You have business/professional income. ITR-4 is for presumptive taxation (Sec 44AD/44ADA).';
+    } else if (hasCG || hasMultipleHP) {
+        itrType = 'ITR-2'; reason = 'You have capital gains or multiple house properties. ITR-2 is required.';
+    } else if (hasSalary || hasOther) {
+        itrType = 'ITR-1 (Sahaj)'; reason = 'You have salary and/or other income (interest, pension). The simplest form works for you.';
+    } else {
+        itrType = 'ITR-1 (Sahaj)'; reason = 'Based on available data, ITR-1 appears suitable. Upload more documents for a better assessment.';
+    }
+    
+    document.getElementById('itrSuggestion').innerHTML = `
+<div class="suggestion-box">
+<h3>💡 Suggested ITR Form: ${itrType}</h3>
+<p>${reason}<br><small style="opacity:.7;margin-top:6px;display:block">This is an AI suggestion. Please verify with your CA for the correct ITR form.</small></p>
+</div>`;
+}
+
+// ===================== SEND TO CALCULATOR =====================
+function sendToCalculator() {
+    const d = extractedData;
+    
+    // Map extracted data to calculator field IDs
+    const calcData = {
+        assesseeName: d.personalInfo.name,
+        pan: d.personalInfo.pan,
+        basicSalary: d.salary.basic || d.salary.grossSalary,
+        da: d.salary.da,
+        hra: d.salary.hra,
+        specialAllowance: d.salary.specialAllowances + d.salary.otherAllowances,
+        lta: d.salary.lta,
+        profTax: d.salary.professionalTax,
+        rentPaid: 0,
+        interestIncome: d.otherIncome.interestSavings + d.otherIncome.interestFD + d.otherIncome.interestOther,
+        dividendIncome: d.otherIncome.dividend,
+        otherIncome: d.otherIncome.otherIncome,
+        familyPension: d.otherIncome.familyPension,
+        letOutRent: d.houseProperty.rentalIncome,
+        municipalTax: d.houseProperty.municipalTax,
+        loanInterestLetOut: d.houseProperty.homeLoanInterestLetOut,
+        sopInterest: d.houseProperty.homeLoanInterestSOP,
+        stcgEquity: d.capitalGains.stcgEquity,
+        stcgOther: d.capitalGains.stcgOther,
+        ltcgEquity: d.capitalGains.ltcgEquity,
+        ltcgOther: d.capitalGains.ltcgOther,
+        sec80C: d.deductions.sec80C,
+        sec80CCD1B: d.deductions.sec80CCD1B,
+        employerNPS: d.deductions.employerNPS,
+        healthSelf: d.deductions.sec80D_self,
+        healthParents: d.deductions.sec80D_parents,
+        sec80E: d.deductions.sec80E,
+        sec80GAmount: d.deductions.sec80G,
+        sec80TTA: d.deductions.sec80TTA,
+        sec80DDB: d.deductions.sec80DDB,
+        _fromUpload: true,
+        _timestamp: Date.now()
+    };
+    
+    localStorage.setItem('makeeazy_upload_data', JSON.stringify(calcData));
+    toast('✅ Data saved! Opening calculator...', 'success');
+    
+    setStep(4);
+    setTimeout(() => {
+        window.location.href = '../calculator/';
+    }, 1200);
+}
+
+// ===================== UTILITIES =====================
+function setStep(num) {
+    document.querySelectorAll('.step').forEach((s, i) => {
+        s.classList.remove('active', 'done');
+        if (i + 1 < num) s.classList.add('done');
+        if (i + 1 === num) s.classList.add('active');
+    });
+}
+
+function toast(msg, type='info') {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+function reAnalyze() {
+    document.getElementById('reviewSection').classList.remove('active');
+    document.getElementById('uploadSection').style.display = '';
+    setStep(1);
+}
+
+function resetAll() {
+    uploadedFiles = [];
+    extractedData = {};
+    document.getElementById('reviewSection').classList.remove('active');
+    document.getElementById('uploadSection').style.display = '';
+    document.getElementById('fileList').innerHTML = '';
+    document.getElementById('uploadActions').style.display = 'none';
+    setStep(1);
+}
+</script>
+</body>
+</html>
