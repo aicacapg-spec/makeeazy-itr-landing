@@ -29,9 +29,45 @@ document.addEventListener('DOMContentLoaded', () => {
     anchor.addEventListener('click', (e) => {
       e.preventDefault();
       const target = document.querySelector(anchor.getAttribute('href'));
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (target) {
+        const offset = 80;
+        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
     });
   });
+
+  // ── Deadline countdown ──
+  const daysLeftEl = document.getElementById('daysLeft');
+  if (daysLeftEl) {
+    const deadline = new Date(new Date().getFullYear(), 6, 31); // July 31
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const diff = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+    daysLeftEl.textContent = diff > 0 ? diff : 0;
+    if (diff <= 15) {
+      document.getElementById('deadlineCounter')?.classList.add('urgent');
+    }
+  }
+
+  // ── Nav scroll-spy ──
+  const sections = document.querySelectorAll('section[id]');
+  const navItems = document.querySelectorAll('.nav-links a');
+  const spyScroll = () => {
+    const scrollY = window.scrollY + 120;
+    sections.forEach(section => {
+      const top = section.offsetTop;
+      const height = section.offsetHeight;
+      const id = section.getAttribute('id');
+      if (scrollY >= top && scrollY < top + height) {
+        navItems.forEach(a => {
+          a.classList.remove('active');
+          if (a.getAttribute('href') === `#${id}`) a.classList.add('active');
+        });
+      }
+    });
+  };
+  window.addEventListener('scroll', spyScroll, { passive: true });
 
   // ── FAQ Accordion ──
   document.querySelectorAll('.faq-question').forEach(question => {
@@ -161,12 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('[data-count]').forEach(el => counterObserver.observe(el));
 
-  // ── WhatsApp link (placeholder) ──
+  // ── WhatsApp link ──
   document.querySelectorAll('.whatsapp-link, .whatsapp-float').forEach(el => {
     el.addEventListener('click', (e) => {
       e.preventDefault();
       const msg = encodeURIComponent('Hi, I want to book an ITR filing appointment with MakeEazy.');
-      window.open(`https://wa.me/919XXXXXXXXX?text=${msg}`, '_blank');
+      window.open(`https://wa.me/919992819995?text=${msg}`, '_blank');
     });
   });
 
