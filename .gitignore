@@ -1,12 +1,15 @@
 # Ignore everything by default
 *
 
-# Allow only landing page files
+# Allow only site files
 !.gitignore
+!CNAME
 !index.html
 !styles.css
 !script.js
 !calculator.html
+!calculator/
+!calculator/index.html
 !hero-illustration.png
 !expert-avatars.png
 !trust-badges.png
