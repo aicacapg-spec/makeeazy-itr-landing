@@ -356,43 +356,67 @@ function updateProgress(pct, text) {
 
 async function callGemini(base64Data, mimeType, docType) {
     const prompt = buildPrompt(docType);
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${_k()}`;
+    const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
     
-    const body = {
-        contents: [{
-            parts: [
-                { text: prompt },
-                { inline_data: { mime_type: mimeType, data: base64Data } }
-            ]
-        }],
-        generationConfig: {
-            temperature: 0.1,
-            responseMimeType: "application/json"
+    for (const model of models) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${_k()}`;
+                
+                const body = {
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inline_data: { mime_type: mimeType, data: base64Data } }
+                        ]
+                    }],
+                    generationConfig: {
+                        temperature: 0.1,
+                        responseMimeType: "application/json"
+                    }
+                };
+                
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                
+                if (resp.status === 429) {
+                    const waitSec = attempt * 10;
+                    updateProgress(-1, `Rate limited — waiting ${waitSec}s before retry ${attempt}/3 (${model})...`);
+                    await new Promise(r => setTimeout(r, waitSec * 1000));
+                    continue;
+                }
+                
+                if (!resp.ok) {
+                    const err = await resp.text();
+                    throw new Error(`API error ${resp.status}: ${err.substring(0, 200)}`);
+                }
+                
+                const data = await resp.json();
+                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error('No response from AI');
+                
+                try {
+                    return JSON.parse(text);
+                } catch {
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) return JSON.parse(jsonMatch[0]);
+                    throw new Error('Could not parse AI response');
+                }
+            } catch (err) {
+                if (attempt === 3 && model === models[models.length - 1]) throw err;
+                if (err.message.includes('429') || err.message.includes('rate')) {
+                    continue;
+                }
+                if (attempt === 3) break; // try next model
+                throw err;
+            }
         }
-    };
-    
-    const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
-    
-    if (!resp.ok) {
-        const err = await resp.text();
-        throw new Error(`API error ${resp.status}: ${err.substring(0, 200)}`);
+        updateProgress(-1, `Switching to fallback model...`);
     }
-    
-    const data = await resp.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error('No response from AI');
-    
-    try {
-        return JSON.parse(text);
-    } catch {
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) return JSON.parse(jsonMatch[0]);
-        throw new Error('Could not parse AI response');
-    }
+    throw new Error('All models exhausted. Please try again in a minute.');
 }
 
 function buildPrompt(docType) {
