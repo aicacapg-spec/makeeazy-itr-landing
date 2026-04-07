@@ -1316,7 +1316,7 @@ Employer NPS (80CCD(2)): 14% of salary for all employers from FY 2025-26.
             if (el && val) { el.value = val; }
         }
         if (d.assesseeName) {
-            const nameEl = document.getElementById('assesseeName');
+            const nameEl = document.getElementById('fullName');
             if (nameEl) nameEl.value = d.assesseeName;
         }
         if (d.pan) {
@@ -1331,7 +1331,7 @@ Employer NPS (80CCD(2)): 14% of salary for all employers from FY 2025-26.
         // Show banner
         const banner = document.createElement('div');
         banner.style.cssText = 'background:#f0fdf4;border:2px solid #16a34a;border-radius:12px;padding:14px 20px;margin:0 32px 0;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:#166534;animation:fadeSlideIn .5s ease';
-        banner.innerHTML = '🤖 <span>Data loaded from AI analysis — please review and adjust if needed. <a href="../upload/" style="color:#32509F;text-decoration:underline">Re-upload</a></span><button onclick="this.parentElement.remove();localStorage.removeItem(\'makeeazy_upload_data\')" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:#64748B">✕</button>';
+        banner.innerHTML = '🤖 <span>Data loaded from AI analysis — please review and adjust if needed. <a href="../smartupload/" style="color:#32509F;text-decoration:underline">Re-upload</a></span><button onclick="this.parentElement.remove();localStorage.removeItem(\'makeeazy_upload_data\')" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:16px;color:#64748B">✕</button>';
         const tabsEl = document.querySelector('.tabs');
         tabsEl.parentNode.insertBefore(banner, tabsEl.nextSibling);
         
