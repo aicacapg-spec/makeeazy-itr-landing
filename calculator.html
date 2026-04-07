@@ -155,7 +155,7 @@ body{padding:0;background:#fff}
 <div class="form-group">
 <label>Employer Type
 <span class="tooltip-wrap"><button class="info-btn">i</button>
-<span class="tooltip-text">Affects employer NPS contribution limit under Sec 80CCD(2):<br>• Government: 14% of salary<br>• Private/Others: 10% of salary (14% from FY 2025-26 as per Budget 2025 — to be verified for final notification)</span>
+<span class="tooltip-text">Affects employer NPS contribution limit under Sec 80CCD(2):<br>• Government: 14% of salary (Basic + DA)<br>• Private: 14% of salary (Basic + DA) — increased from 10% to 14% from FY 2025-26 per Budget 2025<br><br>This is available in BOTH old and new regimes, over and above ₹1.5L of 80C.</span>
 </span></label>
 <select id="employerType">
 <option value="private">Private Sector</option>
@@ -234,7 +234,7 @@ body{padding:0;background:#fff}
 <div class="form-group">
 <label>Employer NPS Contribution (Sec 80CCD(2))
 <span class="tooltip-wrap"><button class="info-btn">i</button>
-<span class="tooltip-text">Employer's contribution to NPS. Allowed in BOTH regimes.<br>Cap: 14% of salary (Govt) / 10% of salary (Private) of (Basic + DA).<br>This deduction is over and above ₹1.5L of 80C.</span>
+<span class="tooltip-text">Employer's contribution to NPS u/s 80CCD(2). Allowed in BOTH regimes.<br>Cap: 14% of salary (Basic + DA) for all employers from FY 2025-26.<br>This deduction is over and above ₹1.5L of 80C.</span>
 </span></label>
 <input type="number" id="employerNPS" value="0" min="0">
 </div>
@@ -606,7 +606,7 @@ const TAX = {
     LIMIT_FAMILY_PENSION_NEW: 25000,
     // Employer NPS caps (% of basic+DA)
     NPS_CAP_GOVT: 0.14,
-    NPS_CAP_PRIVATE: 0.10,
+    NPS_CAP_PRIVATE: 0.14, // Budget 2025: harmonized to 14% for all employers
     // Capital gains
     CG_STCG_EQUITY_RATE: 0.20, // 111A
     CG_LTCG_EQUITY_RATE: 0.125, // 112A
@@ -853,6 +853,8 @@ function calculateTax() {
             totalDeductions = validEmployerNPS + famPensionDeduction;
         }
         
+        // Sec 80A(2): deductions cannot exceed GTI
+        totalDeductions = Math.min(totalDeductions, Math.max(0, normalIncome));
         const taxableNormal = Math.max(0, normalIncome - totalDeductions);
         
         // Total taxable income (includes all CG) - used for 87A and surcharge
@@ -891,11 +893,15 @@ function calculateTax() {
                 // New: if TOTAL taxable income ≤ 12L, rebate up to ₹60,000 (on normal tax only)
                 if (totalTaxableIncome <= TAX.REBATE_NEW_LIMIT) {
                     rebate = Math.min(normalTax, TAX.REBATE_NEW_MAX);
-                } else if (totalTaxableIncome <= 1270589) {
-                    // Marginal relief zone: ₹12,00,001 to ~₹12,70,588 (only if CG don't push above)
-                    const marginalTax = totalTaxableIncome - TAX.REBATE_NEW_LIMIT;
-                    if (normalTax > marginalTax) {
-                        rebate = normalTax - marginalTax;
+                } else {
+                    // Marginal relief zone: total tax should not exceed (totalTaxableIncome - 12L)
+                    const taxAtLimit = calcSlabTax(TAX.REBATE_NEW_LIMIT, TAX.NEW_SLABS).tax;
+                    const breakEven = TAX.REBATE_NEW_LIMIT + taxAtLimit;
+                    if (totalTaxableIncome <= breakEven) {
+                        const marginalTax = totalTaxableIncome - TAX.REBATE_NEW_LIMIT;
+                        if (normalTax > marginalTax) {
+                            rebate = normalTax - marginalTax;
+                        }
                     }
                 }
             }
@@ -920,12 +926,11 @@ function calculateTax() {
         const surchargeNormal = normalTaxAfterRebate * baseSurchargeRate;
         
         // CG surcharge with caps
-        // Equity CG (111A, 112A): surcharge capped at 15%
-        const equitySurchargeRate = Math.min(baseSurchargeRate, 0.15);
-        const surchargeSTCGEquity = taxSTCGEquity * equitySurchargeRate;
-        const surchargeLTCGEquity = taxLTCGEquity * equitySurchargeRate;
-        // Non-equity CG (112): normal surcharge rate (with regime cap already in brackets)
-        const surchargeLTCGOther = taxLTCGOther * baseSurchargeRate;
+        // Surcharge on CG under Sections 111A, 112A, AND 112: all capped at 15%
+        const cgSurchargeRate = Math.min(baseSurchargeRate, 0.15);
+        const surchargeSTCGEquity = taxSTCGEquity * cgSurchargeRate;
+        const surchargeLTCGEquity = taxLTCGEquity * cgSurchargeRate;
+        const surchargeLTCGOther = taxLTCGOther * cgSurchargeRate;
         
         const totalSurcharge = surchargeNormal + surchargeSTCGEquity + surchargeLTCGEquity + surchargeLTCGOther;
         
@@ -1137,7 +1142,8 @@ Tax computation involves numerous provisions, exemptions, and edge cases that ma
 Always consult a qualified Chartered Accountant for filing your return. Calculations are based on the Finance Act 2025 as applicable. 
 Tax amounts are rounded to the nearest ₹10 as per Section 288B. 
 Capital gains rates: STCG Equity (111A) @20%, LTCG Equity (112A) @12.5% (₹1.25L exempt), LTCG Non-Equity (112) @12.5%, STCG Non-Equity at slab rates.
-Surcharge: Old Regime max 37%, New Regime max 25%. Equity CG surcharge capped at 15%.
+Surcharge: Old Regime max 37%, New Regime max 25%. Capital gains surcharge (Sec 111A, 112A, 112) capped at 15%.
+Employer NPS (80CCD(2)): 14% of salary for all employers from FY 2025-26.
 <br><br><strong>MakeEazy</strong> — Making Tax Easy | Not a substitute for professional advice.
 </div>`;
     
