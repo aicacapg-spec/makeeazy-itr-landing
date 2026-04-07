@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Free Income Tax Calculator for FY 2025-26 (AY 2026-27). Compare Old vs New Tax Regime instantly. Accurate, CA-audited computations by MakeEazy.">
 <title>Income Tax Calculator FY 2025-26 | MakeEazy</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='4' width='10' height='24' rx='2' fill='%2332509F'/%3E%3Crect x='14' y='8' width='10' height='20' rx='2' fill='%234A6BC5'/%3E%3Crect x='20' y='4' width='10' height='24' rx='2' fill='%2332509F'/%3E%3C/svg%3E">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -17,22 +19,32 @@ body{font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;background:var
 .header .ver{font-size:11px;opacity:.5;margin-top:6px;font-weight:600;letter-spacing:0.5px}
 .header .back-link{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.7);text-decoration:none;font-size:13px;font-weight:600;transition:.2s}
 .header .back-link:hover{color:#fff}
+/* Progress bar */
+.progress-wrap{padding:0 32px;background:#fff}
+.progress-bar{height:4px;background:var(--tint);border-radius:4px;overflow:hidden;margin:0}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--navy),var(--orange));border-radius:4px;transition:width .5s cubic-bezier(.4,0,.2,1)}
 /* Tabs */
-.tabs{display:flex;background:var(--tint);overflow-x:auto;border-bottom:2px solid var(--navy)}
-.tab{padding:13px 22px;cursor:pointer;border:none;background:0 0;color:var(--navy);font-size:13px;font-weight:700;white-space:nowrap;transition:.2s;position:relative;font-family:inherit}
+.tabs{display:flex;background:var(--tint);overflow-x:auto;border-bottom:2px solid var(--navy);-ms-overflow-style:none;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:13px 22px;cursor:pointer;border:none;background:0 0;color:var(--navy);font-size:13px;font-weight:700;white-space:nowrap;transition:all .25s ease;position:relative;font-family:inherit}
 .tab.active{background:#fff;color:var(--navy)}
 .tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--orange);border-radius:2px 2px 0 0}
 .tab:hover{background:rgba(255,255,255,.5)}
+.tab .tab-check{display:none;color:var(--green);font-size:11px;margin-left:4px}
+.tab.visited .tab-check{display:inline}
 /* Panels */
-.panel{display:none;padding:28px 32px}
+.panel{display:none;padding:28px 32px;animation:fadeSlideIn .35s ease}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .panel.active{display:block}
 /* Form */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:700px){.form-grid{grid-template-columns:1fr}}
 .form-group{margin-bottom:0}
 .form-group label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px}
-.form-group input,.form-group select{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;transition:.2s;font-family:inherit;background:var(--card)}
-.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(50,80,159,.1)}
+.form-group input,.form-group select{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;transition:all .25s ease;font-family:inherit;background:var(--card)}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(50,80,159,.12);transform:scale(1.01)}
+.form-group input:hover,.form-group select:hover{border-color:#94a3b8}
+.form-group input.has-value{border-color:var(--green);background:#f9fef9}
 .section-title{font-size:16px;font-weight:800;color:var(--navy);margin:22px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--tint);display:flex;align-items:center;gap:8px}
 .section-title:first-child{margin-top:0}
 /* Info button */
@@ -52,8 +64,10 @@ body{font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;background:var
 /* Results */
 .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
 @media(max-width:800px){.result-grid{grid-template-columns:1fr}}
-.regime-card{border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:.3s}
+.regime-card{border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:all .35s ease}
+.regime-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
 .regime-card.recommended{border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.1)}
+.regime-card.recommended:hover{box-shadow:0 8px 24px rgba(22,163,74,.15)}
 .regime-header{padding:16px 20px;font-size:15px;font-weight:800;color:#fff;letter-spacing:-0.2px}
 .regime-header.old{background:linear-gradient(135deg,var(--navy),var(--navy-dark))}
 .regime-header.new{background:linear-gradient(135deg,var(--orange),var(--orange-hover))}
@@ -74,13 +88,16 @@ body{font-family:'Plus Jakarta Sans','Inter',system-ui,sans-serif;background:var
 .recommend-box.same{background:#f9fafb;color:var(--muted);border:2px solid var(--border)}
 .recommend-box .save{font-size:24px;display:block;margin-top:4px;font-family:'Inter',sans-serif;font-weight:900}
 /* Buttons */
-.btn{padding:12px 28px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;font-family:inherit}
+.btn{padding:12px 28px;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all .25s ease;font-family:inherit;position:relative;overflow:hidden}
+.btn::after{content:'';position:absolute;top:50%;left:50%;width:0;height:0;background:rgba(255,255,255,.15);border-radius:50%;transition:width .4s,height .4s,top .4s,left .4s;transform:translate(-50%,-50%)}
+.btn:active::after{width:300px;height:300px}
 .btn-primary{background:var(--navy);color:#fff}
-.btn-primary:hover{background:var(--navy-dark);transform:translateY(-1px)}
-.btn-orange{background:var(--orange);color:#fff}
-.btn-orange:hover{background:var(--orange-hover);transform:translateY(-1px)}
+.btn-primary:hover{background:var(--navy-dark);transform:translateY(-2px);box-shadow:0 4px 16px rgba(50,80,159,.25)}
+.btn-orange{background:var(--orange);color:#fff;animation:pulseOrange 2s infinite}
+.btn-orange:hover{background:var(--orange-hover);transform:translateY(-2px);box-shadow:0 4px 16px rgba(247,127,0,.3);animation:none}
+@keyframes pulseOrange{0%,100%{box-shadow:0 0 0 0 rgba(247,127,0,.3)}50%{box-shadow:0 0 0 8px rgba(247,127,0,0)}}
 .btn-outline{background:#fff;color:var(--navy);border:2px solid var(--navy)}
-.btn-outline:hover{background:var(--tint-light)}
+.btn-outline:hover{background:var(--tint-light);transform:translateY(-1px)}
 .btn-row{display:flex;gap:12px;margin-top:22px;flex-wrap:wrap}
 /* Disclaimer */
 .disclaimer{background:var(--tint-light);padding:18px 22px;margin:20px 0 0;border-radius:var(--radius);font-size:11px;color:var(--muted);line-height:1.7;border:1px solid var(--tint)}
@@ -97,6 +114,30 @@ body{padding:0;background:#fff}
 .old-only{font-size:10px;background:var(--tint);color:var(--navy);padding:2px 8px;border-radius:6px;font-weight:700;margin-left:4px}
 .new-only{font-size:10px;background:#fff7ed;color:var(--orange);padding:2px 8px;border-radius:6px;font-weight:700;margin-left:4px}
 .hidden{display:none}
+/* Recommend animation */
+.recommend-box{animation:scaleIn .4s ease}
+@keyframes scaleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.regime-card{animation:slideUp .5s ease both}
+.regime-card:nth-child(2){animation-delay:.1s}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+/* Toast notification */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy-dark);color:#fff;padding:14px 24px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:999;animation:toastIn .4s ease;display:flex;align-items:center;gap:8px}
+.toast.success{background:var(--green)}
+.toast.warn{background:var(--orange)}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* Watermark */
+.watermark{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(0,0,0,.08);font-weight:800;letter-spacing:2px;pointer-events:none;user-select:none;z-index:0}
+/* Mobile tweaks */
+@media(max-width:600px){
+.header h1{font-size:18px}
+.header .sub{font-size:12px}
+.header .back-link{position:static;display:block;margin-bottom:8px;text-align:left}
+.tab{padding:10px 14px;font-size:11px}
+.panel{padding:18px 16px}
+.regime-header{font-size:13px;padding:12px 14px}
+.regime-row{font-size:12px}
+.btn{padding:10px 20px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -105,16 +146,18 @@ body{padding:0;background:#fff}
 <a href="index.html" class="back-link">← Back to Main Site</a>
 <h1>🧮 MakeEazy Income Tax Calculator</h1>
 <div class="sub">Financial Year 2025-26 (Assessment Year 2026-27)</div>
-<div class="ver">v12.0 — Comprehensive Tax Estimator</div>
+<div class="ver">v12.1 — Comprehensive Tax Estimator | CA-Audited</div>
 </div>
 
+<div class="progress-wrap no-print"><div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:14%"></div></div></div>
+
 <div class="tabs">
-<button class="tab active" onclick="showTab(0)">👤 Personal</button>
-<button class="tab" onclick="showTab(1)">💼 Income</button>
-<button class="tab" onclick="showTab(2)">🏠 House Property</button>
-<button class="tab" onclick="showTab(3)">📈 Capital Gains</button>
-<button class="tab" onclick="showTab(4)">🏢 Business</button>
-<button class="tab" onclick="showTab(5)">📋 Deductions</button>
+<button class="tab active" onclick="showTab(0)">👤 Personal<span class="tab-check">✓</span></button>
+<button class="tab" onclick="showTab(1)">💼 Income<span class="tab-check">✓</span></button>
+<button class="tab" onclick="showTab(2)">🏠 House Property<span class="tab-check">✓</span></button>
+<button class="tab" onclick="showTab(3)">📈 Capital Gains<span class="tab-check">✓</span></button>
+<button class="tab" onclick="showTab(4)">🏢 Business<span class="tab-check">✓</span></button>
+<button class="tab" onclick="showTab(5)">📋 Deductions<span class="tab-check">✓</span></button>
 <button class="tab" onclick="showTab(6)">📊 Results</button>
 </div>
 
@@ -539,17 +582,100 @@ body{padding:0;background:#fff}
 </div>
 </div>
 </div><!-- container -->
+<div class="watermark no-print">MAKEEAZY.IN</div>
 
 <script>
+// ===================== SECURITY LAYER =====================
+(function(){
+    // Disable right-click context menu
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); showToast('Right-click disabled','warn'); });
+    // Disable dev tools shortcuts
+    document.addEventListener('keydown', function(e){
+        // F12
+        if(e.key === 'F12') { e.preventDefault(); return false; }
+        // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
+        if(e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) { e.preventDefault(); return false; }
+        // Ctrl+U (view source)
+        if(e.ctrlKey && (e.key === 'u' || e.key === 'U')) { e.preventDefault(); return false; }
+        // Ctrl+S (save)
+        if(e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); showToast('Saving disabled','warn'); return false; }
+    });
+    // Console warning
+    const warnStyle = 'font-size:24px;font-weight:bold;color:#dc2626;';
+    const infoStyle = 'font-size:14px;color:#333;';
+    console.log('%c⚠️ STOP!', warnStyle);
+    console.log('%cThis is a proprietary tool of MakeEazy.in. Unauthorized copying, reverse-engineering, or redistribution of this code is strictly prohibited and may result in legal action under the IT Act, 2000 and Copyright Act, 1957.', infoStyle);
+    // Periodic debugger check (deters casual dev tools usage)
+    let devCheckInterval;
+    function startDevCheck(){
+        devCheckInterval = setInterval(function(){
+            const start = performance.now();
+            debugger;
+            if(performance.now() - start > 100){
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;color:#dc2626;font-size:20px;text-align:center;padding:20px"><div><h2>⚠️ Developer Tools Detected</h2><p style="margin-top:12px;color:#666;font-size:14px">Please close developer tools to continue using this calculator.<br>This tool is proprietary to <strong>MakeEazy.in</strong></p></div></div>';
+                clearInterval(devCheckInterval);
+            }
+        }, 2000);
+    }
+    // Only enable debugger trap in production (not localhost)
+    if(location.hostname !== 'localhost' && location.hostname !== '127.0.0.1'){
+        startDevCheck();
+    }
+    // Disable text selection on sensitive elements
+    document.addEventListener('selectstart', function(e){
+        if(e.target.closest('script') || e.target.closest('.disclaimer')) e.preventDefault();
+    });
+    // Disable drag
+    document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+})();
+
+// ===================== TOAST NOTIFICATIONS =====================
+function showToast(msg, type='info') {
+    const existing = document.querySelector('.toast');
+    if(existing) existing.remove();
+    const t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(20px)'; setTimeout(() => t.remove(), 300); }, 2500);
+}
+
 // ===================== TAB NAVIGATION =====================
+const visitedTabs = new Set([0]);
 function showTab(idx) {
+    visitedTabs.add(idx);
     document.querySelectorAll('.panel').forEach((p,i) => {
         p.classList.toggle('active', i === idx);
     });
     document.querySelectorAll('.tab').forEach((t,i) => {
         t.classList.toggle('active', i === idx);
+        if(visitedTabs.has(i) && i < 6) t.classList.add('visited');
+    });
+    // Update progress bar
+    const progress = Math.min(100, Math.round(((idx + 1) / 7) * 100));
+    document.getElementById('progressFill').style.width = progress + '%';
+    // Smooth scroll to top of container
+    document.querySelector('.container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ===================== INPUT ENHANCEMENT =====================
+// Highlight inputs that have non-zero values
+function markFilledInputs() {
+    document.querySelectorAll('.form-group input[type=number]').forEach(inp => {
+        const val = parseFloat(inp.value) || 0;
+        inp.classList.toggle('has-value', val > 0);
     });
 }
+document.addEventListener('input', function(e) {
+    if(e.target.type === 'number') markFilledInputs();
+});
+// Format currency on blur (show comma-formatted), parse on focus
+document.addEventListener('focusin', function(e) {
+    if(e.target.type === 'number' && e.target.dataset.formatted) {
+        e.target.value = e.target.dataset.rawValue || e.target.value;
+        delete e.target.dataset.formatted;
+    }
+});
 
 // Business type toggle
 document.getElementById('presumptiveRate').addEventListener('change', function() {
@@ -1154,6 +1280,10 @@ Employer NPS (80CCD(2)): 14% of salary for all employers from FY 2025-26.
     
     document.getElementById('resultsContent').innerHTML = html;
     showTab(6);
+    // Mark all tabs as visited and show success toast
+    for(let i=0;i<6;i++) visitedTabs.add(i);
+    showToast('✅ Tax computed successfully!', 'success');
+    markFilledInputs();
 }
 </script>
 </body>
