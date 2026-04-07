@@ -206,10 +206,14 @@ document.addEventListener('dragstart',e=>{if(e.target.tagName!=='IMG')return;e.p
 })();
 
 // ===================== API CONFIG =====================
-const _p=[
-'QUl6YVN5RGxBNWhj','UmlPbXo5QkdpOU5P','cDg0Xzk4MENwR2kt','d2N3'];
-function _k(){return atob(_p[0])+atob(_p[1])+atob(_p[2])+atob(_p[3]);}
-const API_MODEL='gemini-2.0-flash';
+const _keys = [
+  ['QUl6YVN5QTg=','VXRWUHdGN1U=','MENqZmdBNC1JNU5Q','d1ctQVdvYWIyTlE='],
+  ['QUl6YVN5RGxBNWhj','UmlPbXo5QkdpOU5P','cDg0Xzk4MENwR2kt','d2N3']
+];
+let _kidx = 0;
+function _k(){ const p=_keys[_kidx]; return atob(p[0])+atob(p[1])+atob(p[2])+atob(p[3]); }
+function _nextKey(){ _kidx = (_kidx + 1) % _keys.length; }
+const API_MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash-latest', 'gemini-2.0-flash-lite'];
 
 // ===================== STATE =====================
 let uploadedFiles = [];
@@ -356,67 +360,83 @@ function updateProgress(pct, text) {
 
 async function callGemini(base64Data, mimeType, docType) {
     const prompt = buildPrompt(docType);
-    const models = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+    const totalKeys = _keys.length;
     
-    for (const model of models) {
-        for (let attempt = 1; attempt <= 3; attempt++) {
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${_k()}`;
-                
-                const body = {
-                    contents: [{
-                        parts: [
-                            { text: prompt },
-                            { inline_data: { mime_type: mimeType, data: base64Data } }
-                        ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.1,
-                        responseMimeType: "application/json"
-                    }
-                };
-                
-                const resp = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                
-                if (resp.status === 429) {
-                    const waitSec = attempt * 10;
-                    updateProgress(-1, `Rate limited — waiting ${waitSec}s before retry ${attempt}/3 (${model})...`);
-                    await new Promise(r => setTimeout(r, waitSec * 1000));
-                    continue;
-                }
-                
-                if (!resp.ok) {
-                    const err = await resp.text();
-                    throw new Error(`API error ${resp.status}: ${err.substring(0, 200)}`);
-                }
-                
-                const data = await resp.json();
-                const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!text) throw new Error('No response from AI');
-                
+    for (const model of API_MODELS) {
+        for (let ki = 0; ki < totalKeys; ki++) {
+            for (let attempt = 1; attempt <= 3; attempt++) {
                 try {
-                    return JSON.parse(text);
-                } catch {
-                    const jsonMatch = text.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) return JSON.parse(jsonMatch[0]);
-                    throw new Error('Could not parse AI response');
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${_k()}`;
+                    
+                    const body = {
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                { inline_data: { mime_type: mimeType, data: base64Data } }
+                            ]
+                        }],
+                        generationConfig: {
+                            temperature: 0.1,
+                            responseMimeType: "application/json"
+                        }
+                    };
+                    
+                    updateProgress(-1, `Analyzing with ${model} (key ${_kidx+1})...`);
+                    
+                    const resp = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    
+                    if (resp.status === 429) {
+                        if (attempt < 3) {
+                            const waitSec = attempt * 8;
+                            updateProgress(-1, `Rate limited — trying again in ${waitSec}s (attempt ${attempt}/3)...`);
+                            await new Promise(r => setTimeout(r, waitSec * 1000));
+                            continue;
+                        }
+                        // Switch to next key
+                        _nextKey();
+                        updateProgress(-1, `Switching to key ${_kidx+1}...`);
+                        break;
+                    }
+                    
+                    if (resp.status === 400 || resp.status === 404) {
+                        // Model not available, try next
+                        break;
+                    }
+                    
+                    if (!resp.ok) {
+                        const err = await resp.text();
+                        throw new Error(`API error ${resp.status}: ${err.substring(0, 200)}`);
+                    }
+                    
+                    const data = await resp.json();
+                    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error('No response from AI');
+                    
+                    try {
+                        return JSON.parse(text);
+                    } catch {
+                        const jsonMatch = text.match(/\{[\s\S]*\}/);
+                        if (jsonMatch) return JSON.parse(jsonMatch[0]);
+                        throw new Error('Could not parse AI response');
+                    }
+                } catch (err) {
+                    if (err.message.includes('429') || err.message.includes('rate') || err.message.includes('quota')) {
+                        _nextKey();
+                        break;
+                    }
+                    // For non-rate-limit errors, rethrow on last attempt
+                    if (ki === totalKeys - 1 && model === API_MODELS[API_MODELS.length - 1] && attempt === 3) throw err;
+                    if (attempt === 3) break;
                 }
-            } catch (err) {
-                if (attempt === 3 && model === models[models.length - 1]) throw err;
-                if (err.message.includes('429') || err.message.includes('rate')) {
-                    continue;
-                }
-                if (attempt === 3) break; // try next model
-                throw err;
             }
         }
-        updateProgress(-1, `Switching to fallback model...`);
+        updateProgress(-1, `Trying next model...`);
     }
-    throw new Error('All models exhausted. Please try again in a minute.');
+    throw new Error('All API keys and models exhausted. Please wait 1-2 minutes and try again.');
 }
 
 function buildPrompt(docType) {
