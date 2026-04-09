@@ -350,9 +350,19 @@ function updateProgress(pct, text) {
 }
 
 // ===================== CLIENT-SIDE PRE-PARSERS =====================
-// Regex-based extraction for known Indian tax document formats (runs before AI)
+// Based on exact field labels, category names, and regex patterns from Indian tax document knowledge base
 function normalizeText(text) { return text.replace(/\s+/g, ' ').trim(); }
 function parseNum(s) { if (!s) return 0; return parseFloat(s.replace(/,/g, '').replace(/[^\d.]/g, '')) || 0; }
+
+// Aggregate all regex matches for a set of patterns
+function sumAllMatches(text, patterns) {
+    let total = 0;
+    for (const rx of patterns) {
+        const matches = [...text.matchAll(new RegExp(rx, 'gi'))];
+        for (const m of matches) total += parseNum(m[1]);
+    }
+    return total;
+}
 
 function preParseAIS(text) {
     const norm = normalizeText(text);
@@ -360,34 +370,86 @@ function preParseAIS(text) {
     // PAN
     const panM = norm.match(/PAN\s*[:\-]?\s*([A-Z]{5}\d{4}[A-Z])/i);
     if (panM) data.pan = panM[1].toUpperCase();
-    // Name
-    const nameM = norm.match(/Name\s*[:\-]?\s*([A-Z][A-Z\s]{3,40}?)(?=\s{2,}|PAN|Aadhaar|\d)/i);
+    // Name from Part A
+    const nameM = norm.match(/Name\s*(?:of\s+the\s+Assessee)?\s*[:\-]?\s*([A-Z][A-Z\s]{3,40}?)(?=\s{2,}|PAN|Aadhaar|Date|\d)/i);
     if (nameM) data.name = nameM[1].trim();
-    // Salary
-    const salaryM = norm.match(/(?:Salary|Salaries)[^]*?(?:Aggregate|Total)[^\d]*?([\d,]+(?:\.\d+)?)/i);
-    if (salaryM) data.salary = parseNum(salaryM[1]);
-    // Interest
-    const intSavM = norm.match(/Interest\s+(?:from\s+)?Sav[a-z]*[^]*?(?:Aggregate|Total|Processed)[^\d]*?([\d,]+(?:\.\d+)?)/i);
-    if (intSavM) data.interestSavings = parseNum(intSavM[1]);
-    const intDepM = norm.match(/Interest\s+(?:from\s+)?(?:Deposit|FD|Fixed|Recurring)[^]*?(?:Aggregate|Total|Processed)[^\d]*?([\d,]+(?:\.\d+)?)/i);
-    if (intDepM) data.interestFD = parseNum(intDepM[1]);
-    const intOthM = norm.match(/Interest\s+(?:from\s+)?Other[^]*?(?:Aggregate|Total|Processed)[^\d]*?([\d,]+(?:\.\d+)?)/i);
-    if (intOthM) data.interestOther = parseNum(intOthM[1]);
-    // Dividend
-    const divM = norm.match(/Dividend[^]*?(?:Aggregate|Total|Processed)[^\d]*?([\d,]+(?:\.\d+)?)/i);
-    if (divM) data.dividend = parseNum(divM[1]);
-    // Rent
-    const rentM = norm.match(/Rent\s+(?:Received|Payment|Income)[^]*?(?:Aggregate|Total|Processed)[^\d]*?([\d,]+(?:\.\d+)?)/i);
+    
+    // B1 - TDS: Salary (u/s 192) - exact category match
+    const salaryPatterns = [
+        /Salary\s*\(?u\/s\s*192\)?\s*[\s\S]*?([\d,]+\.\d{2})/i,
+        /Salary\s*\(?u\/s192\)?\s*[\s\S]*?([\d,]+\.\d{2})/i,
+        /Salary\s*\(?U\/S\s*192\)?\s*[\s\S]*?([\d,]+\.\d{2})/i
+    ];
+    for (const rx of salaryPatterns) {
+        const m = norm.match(rx);
+        if (m) { data.salary = parseNum(m[1]); break; }
+    }
+    
+    // B6 - Interest from Savings Account
+    const intSavPatterns = [
+        /Interest\s+from\s+Savings\s+Account[\s\S]*?([\d,]+\.\d{2})/i,
+        /Interest\s+from\s+Savings[\s\S]*?([\d,]+(?:\.\d{2})?)/i
+    ];
+    data.interestSavings = sumAllMatches(norm, intSavPatterns.map(r => r.source));
+    
+    // B6 - Interest from Deposit
+    const intFDPatterns = [
+        /Interest\s+from\s+Deposit[\s\S]*?([\d,]+\.\d{2})/i,
+        /Interest\s+other\s+than\s+Interest\s+on\s+Securities\s*\(?u\/s\s*194A\)?[\s\S]*?([\d,]+\.\d{2})/i
+    ];
+    for (const rx of intFDPatterns) {
+        const m = norm.match(rx);
+        if (m && !data.interestFD) { data.interestFD = parseNum(m[1]); }
+    }
+    
+    // B6 - Dividend
+    const divPatterns = [
+        /Dividend\s*\(?u\/s\s*194\)?[\s\S]*?([\d,]+\.\d{2})/i,
+        /Dividend[\s\S]*?([\d,]+(?:\.\d{2})?)/i
+    ];
+    for (const rx of divPatterns) {
+        const m = norm.match(rx);
+        if (m && !data.dividend) { data.dividend = parseNum(m[1]); }
+    }
+    
+    // B6 - Rent received
+    const rentM = norm.match(/Rent\s+received[\s\S]*?([\d,]+(?:\.\d{2})?)/i);
     if (rentM) data.rentalIncome = parseNum(rentM[1]);
-    // Sale of securities
-    const secM = norm.match(/Sale\s+of\s+(?:Securities|Shares|Mutual\s+Fund|units)[^]*?(?:Aggregate|Total|Processed|Consideration)[^\d]*?([\d,]+(?:\.\d+)?)/i);
-    if (secM) data.saleConsideration = parseNum(secM[1]);
-    // TDS
-    const tdsM = [...norm.matchAll(/TDS\s+(?:Deducted|Amount)[^\d]*?([\d,]+(?:\.\d+)?)/gi)];
-    if (tdsM.length > 0) data.tdsTotal = tdsM.reduce((s, m) => s + parseNum(m[1]), 0);
-    // TDS from Part B1
-    const tdsAgg = norm.match(/Part\s*B1[^]*?(?:TOTAL|Aggregate)[^\d]*?([\d,]+(?:\.\d+)?)/i);
-    if (tdsAgg && !data.tdsTotal) data.tdsTotal = parseNum(tdsAgg[1]);
+    
+    // B6 - Capital Gains on Sale of Equity/MF
+    const cgPatterns = [
+        /Capital\s+Gains\s+on\s+Sale\s+of\s+Equity\s+Shares[\s\S]*?([\d,]+\.\d{2})/i,
+        /Capital\s+Gains\s+on\s+Sale\s+of\s+Mutual\s+Funds[\s\S]*?([\d,]+\.\d{2})/i
+    ];
+    let cgTotal = 0;
+    for (const rx of cgPatterns) {
+        const m = norm.match(rx);
+        if (m) cgTotal += parseNum(m[1]);
+    }
+    if (cgTotal > 0) data.capitalGainsSale = cgTotal;
+    
+    // B3 - Sale/Redemption of Mutual Fund (SFT)
+    const mfSaleM = norm.match(/Sale\/Redemption\s+of\s+Mutual\s+Fund[\s\S]*?([\d,]+\.\d{2})/i);
+    if (mfSaleM) data.mfSaleValue = parseNum(mfSaleM[1]);
+    
+    // TDS - aggregate from multiple sources
+    const tdsPatterns = [
+        /Total\s+Tax\s+Deducted[\s\S]*?([\d,]+\.\d{2})/gi,
+        /TDS\s+(?:Deducted|Amount)[\s\S]*?([\d,]+\.\d{2})/gi
+    ];
+    let tdsTotal = 0;
+    for (const rx of tdsPatterns) {
+        const matches = [...norm.matchAll(rx)];
+        for (const m of matches) tdsTotal += parseNum(m[1]);
+    }
+    if (tdsTotal > 0) data.tdsTotal = tdsTotal;
+    
+    // B4 - Advance Tax / Self Assessment Tax
+    const advTaxM = norm.match(/Advance\s+Tax[\s\S]*?([\d,]+\.\d{2})/i);
+    if (advTaxM) data.advanceTax = parseNum(advTaxM[1]);
+    const satM = norm.match(/Self\s+Assessment\s+Tax[\s\S]*?([\d,]+\.\d{2})/i);
+    if (satM) data.selfAssessmentTax = parseNum(satM[1]);
+    
     return data;
 }
 
@@ -397,47 +459,53 @@ function preParseTIS(text) {
     // PAN
     const panM = norm.match(/PAN\s*[:\-]?\s*([A-Z]{5}\d{4}[A-Z])/i);
     if (panM) data.pan = panM[1].toUpperCase();
-    // TIS summary table: "SR.NO CATEGORY PROCESSED ACCEPTED"
-    const patterns = [
-        { key: 'salary', rx: /\d+\s+(?:Salary|Salaries)\s+([\d,]+)\s+([\d,]+)/i },
-        { key: 'interestSavings', rx: /\d+\s+Interest\s+(?:from\s+)?(?:Saving|savings?\s+bank)\s+([\d,]+)\s+([\d,]+)/i },
-        { key: 'interestFD', rx: /\d+\s+Interest\s+(?:from\s+)?(?:Deposit|FD|Fixed|recurring)\s+([\d,]+)\s+([\d,]+)/i },
-        { key: 'dividend', rx: /\d+\s+Dividend\s+([\d,]+)\s+([\d,]+)/i },
-        { key: 'rentalIncome', rx: /\d+\s+Rent\s+(?:received|payment)?\s*([\d,]+)\s+([\d,]+)/i },
-        { key: 'saleConsideration', rx: /\d+\s+Sale\s+of\s+securities\s+and\s+units?\s+of\s+mutual\s+fund\s+([\d,]+)\s+([\d,]+)/i },
+    // Name
+    const nameM = norm.match(/Name\s*[:\-]?\s*([A-Z][A-Z\s]{3,40}?)(?=\s{2,}|PAN|Assessment|\d)/i);
+    if (nameM) data.name = nameM[1].trim();
+    
+    // TIS summary table - exact category names from knowledge base
+    // Format: "SR.NO CATEGORY PROCESSED_VALUE ACCEPTED_VALUE"
+    // Try multiple spacing patterns since PDF extraction varies
+    const tisCategories = [
+        { key: 'salary', names: ['Salary'] },
+        { key: 'rentalIncome', names: ['Rent Received', 'Rent Payment'] },
+        { key: 'dividend', names: ['Dividend Income', 'Dividend'] },
+        { key: 'interestSavings', names: ['Interest from Savings Account', 'Interest from Savings Bank'] },
+        { key: 'interestFD', names: ['Interest from Deposit', 'Interest from Fixed Deposit'] },
+        { key: 'interestRefund', names: ['Interest from Income Tax Refund'] },
+        { key: 'interestOther', names: ['Interest from Others', 'Interest from Other'] },
+        { key: 'equitySTTPaid', names: ['Receipts from Transfer of Equity Share / MF / Share (STT Paid)', 'Receipts from Transfer of Equity Share'] },
+        { key: 'equitySTTNotPaid', names: ['Receipts from Transfer of Equity Share / MF / Share (STT Not Paid)'] },
+        { key: 'debtMF', names: ['Receipts from Transfer of Debt MF / Bonds', 'Receipts from Transfer of Debt'] },
+        { key: 'interestBonds', names: ['Interest on Bonds/Debentures', 'Interest on Bonds'] },
+        { key: 'purchaseProperty', names: ['Purchase of Immovable Property'] },
+        { key: 'saleProperty', names: ['Sale of Immovable Property'] },
+        { key: 'cashDeposits', names: ['Cash Deposits'] },
+        { key: 'cashWithdrawals', names: ['Cash Withdrawals'] },
+        { key: 'gstTurnover', names: ['GST Turnover as per GSTR-3B', 'GST Turnover'] },
+        { key: 'foreignRemittance', names: ['Foreign Remittance / LRS', 'Foreign Remittance'] },
+        { key: 'tdsInfo', names: ['Other TDS/TCS Information', 'TDS/TCS'] }
     ];
-    for (const p of patterns) {
-        const m = norm.match(p.rx);
-        if (m) data[p.key] = parseNum(m[1]);
+    
+    for (const cat of tisCategories) {
+        for (const name of cat.names) {
+            // Pattern 1: "1 Salary 12,50,000 12,50,000" (with SR.NO)
+            const rx1 = new RegExp('\\d+\\s+' + name.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + '\\s+([\\d,]+(?:\\.\\d{2})?)\\s+([\\d,]+(?:\\.\\d{2})?)', 'i');
+            const m1 = norm.match(rx1);
+            if (m1) { data[cat.key] = parseNum(m1[1]); break; }
+            
+            // Pattern 2: "Salary 12,50,000 12,50,000" (without SR.NO)
+            const rx2 = new RegExp(name.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + '\\s+([\\d,]+(?:\\.\\d{2})?)(?:\\s+[\\d,]+(?:\\.\\d{2})?)?', 'i');
+            const m2 = norm.match(rx2);
+            if (m2) { data[cat.key] = parseNum(m2[1]); break; }
+            
+            // Pattern 3: Derived/Processed Value format
+            const rx3 = new RegExp(name.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + '[\\s\\S]*?(?:Derived|Processed)\\s+Value[^\\d]*?([\\d,]+(?:\\.\\d+)?)', 'i');
+            const m3 = norm.match(rx3);
+            if (m3) { data[cat.key] = parseNum(m3[1]); break; }
+        }
     }
-    // Derived value patterns
-    const derivedPatterns = [
-        { key: 'salary', rx: /Salary[^]*?(?:Derived|Processed)\s+Value[^\d]*?([\d,]+(?:\.\d+)?)/i },
-        { key: 'interestSavings', rx: /Interest\s+(?:from\s+)?Saving[^]*?(?:Derived|Processed)\s+Value[^\d]*?([\d,]+(?:\.\d+)?)/i },
-        { key: 'interestFD', rx: /Interest\s+(?:from\s+)?(?:Deposit|FD|Fixed)[^]*?(?:Derived|Processed)\s+Value[^\d]*?([\d,]+(?:\.\d+)?)/i },
-        { key: 'dividend', rx: /Dividend[^]*?(?:Derived|Processed)\s+Value[^\d]*?([\d,]+(?:\.\d+)?)/i },
-    ];
-    for (const p of derivedPatterns) {
-        const m = norm.match(p.rx);
-        if (m && !data[p.key]) data[p.key] = parseNum(m[1]);
-    }
-    return data;
-}
-
-function preParseBankStatement(text) {
-    const norm = normalizeText(text);
-    const data = { credits: 0, debits: 0, interestEarned: 0, transactions: 0 };
-    // Interest credited
-    const intMatches = [...norm.matchAll(/(?:INT\.?\s*(?:PAY|PAID|CREDIT)|INTEREST\s+(?:CREDIT|PAID|ON\s+DEPOSIT)|NEFT\s+INT|BY\s+INTEREST)[^\d]*?([\d,]+(?:\.\d{2})?)/gi)];
-    if (intMatches.length > 0) data.interestEarned = intMatches.reduce((s, m) => s + parseNum(m[1]), 0);
-    // Total credits/debits from summary if available
-    const creditM = norm.match(/(?:Total\s+Credits?|Total\s+Deposits?)\s*[:\-]?\s*(?:Rs\.?\s*)?([\d,]+(?:\.\d{2})?)/i);
-    if (creditM) data.credits = parseNum(creditM[1]);
-    const debitM = norm.match(/(?:Total\s+Debits?|Total\s+Withdrawals?)\s*[:\-]?\s*(?:Rs\.?\s*)?([\d,]+(?:\.\d{2})?)/i);
-    if (debitM) data.debits = parseNum(debitM[1]);
-    // Account number
-    const acctM = norm.match(/(?:Account\s*(?:No|Number|#)|A\/c\s*No)\s*[:\-]?\s*(\d{8,18})/i);
-    if (acctM) data.accountNumber = acctM[1];
+    
     return data;
 }
 
@@ -447,15 +515,113 @@ function preParse26AS(text) {
     // PAN
     const panM = norm.match(/PAN\s*[:\-]?\s*([A-Z]{5}\d{4}[A-Z])/i);
     if (panM) data.pan = panM[1].toUpperCase();
-    // TDS by employer (Part A)
-    const partA = [...norm.matchAll(/(?:Part\s*A|DETAILS OF TAX DEDUCTED)[^]*?(?:194J|194H|192|Salary|Total)[^\d]*?([\d,]+(?:\.\d+)?)\s+[\d,]+(?:\.\d+)?\s+([\d,]+(?:\.\d+)?)/gi)];
-    if (partA.length > 0) data.tdsTotal = partA.reduce((s, m) => s + parseNum(m[2] || m[1]), 0);
-    // TCS (Part B) 
-    const partB = norm.match(/Part\s*B[^]*?(?:TOTAL|Aggregate)[^\d]*?([\d,]+(?:\.\d+)?)/i);
-    if (partB) data.tcsTotal = parseNum(partB[1]);
-    // Advance tax (Part C)
-    const partC = norm.match(/(?:Part\s*C|Advance\s+Tax|Self[\s-]*Assessment)[^]*?(?:TOTAL|Aggregate)[^\d]*?([\d,]+(?:\.\d+)?)/i);
-    if (partC) data.advanceTax = parseNum(partC[1]);
+    
+    // Part A - TDS: Section 192 = Salary
+    const sec192 = [...norm.matchAll(/\b192\b\s+\d{2}\/\d{2}\/\d{4}\s+([\d,]+\.\d{2})/gi)];
+    if (sec192.length > 0) data.salaryAmount = sec192.reduce((s, m) => s + parseNum(m[1]), 0);
+    
+    // Part A - Section 194A = Interest  
+    const sec194A = [...norm.matchAll(/\b194A\b\s+\d{2}\/\d{2}\/\d{4}\s+([\d,]+\.\d{2})/gi)];
+    if (sec194A.length > 0) data.interestAmount = sec194A.reduce((s, m) => s + parseNum(m[1]), 0);
+    
+    // Part A - Section 194 = Dividend
+    const sec194 = [...norm.matchAll(/\b194\b(?!\w)\s+\d{2}\/\d{2}\/\d{4}\s+([\d,]+\.\d{2})/gi)];
+    if (sec194.length > 0) data.dividendAmount = sec194.reduce((s, m) => s + parseNum(m[1]), 0);
+    
+    // Part A - Section 194IB = Rent
+    const sec194IB = [...norm.matchAll(/\b194IB\b\s+\d{2}\/\d{2}\/\d{4}\s+([\d,]+\.\d{2})/gi)];
+    if (sec194IB.length > 0) data.rentAmount = sec194IB.reduce((s, m) => s + parseNum(m[1]), 0);
+    
+    // Total TDS
+    const tdsPatterns = [
+        /Total\s+Tax\s+Deducted\s*([\d,]+\.\d{2})/gi,
+        /Tax\s+Deducted\s+([\d,]+\.\d{2})/gi,
+        /Total\s+TDS\s+Deposited\s*([\d,]+\.\d{2})/gi
+    ];
+    let tdsTotal = 0;
+    for (const rx of tdsPatterns) {
+        const matches = [...norm.matchAll(rx)];
+        for (const m of matches) tdsTotal += parseNum(m[1]);
+    }
+    if (tdsTotal > 0) data.tdsTotal = tdsTotal;
+    
+    // Part C - Advance Tax / Self Assessment
+    const partCAmounts = [...norm.matchAll(/(?:Part\s*C|BSR\s*Code)[\s\S]*?Tax\s+Paid\s+([\d,]+\.\d{2})/gi)];
+    if (partCAmounts.length > 0) data.advanceTax = partCAmounts.reduce((s, m) => s + parseNum(m[1]), 0);
+    
+    // Employer name (deductor with section 192)
+    const empM = norm.match(/([A-Z][A-Z\s&.]+(?:PVT|PRIVATE|LIMITED|LTD|LLP|CORP|INC|TECHNOLOGIES|SOLUTIONS|SERVICES|INFOSYS|WIPRO|TCS|HCL|COGNIZANT|ACCENTURE)[A-Z\s&.]*)\s+\w{10}\s+[\d,]+/i);
+    if (empM) data.employerName = empM[1].trim();
+    
+    return data;
+}
+
+function preParseBankStatement(text) {
+    const norm = normalizeText(text);
+    const data = { interestSavings: 0, interestFD: 0, tdsBank: 0, dividend: 0 };
+    
+    // Detect bank
+    let bank = 'unknown';
+    if (/STATE\s+BANK\s+OF\s+INDIA|SBIN/i.test(norm)) bank = 'SBI';
+    else if (/HDFC\s+BANK|HDFC0/i.test(norm)) bank = 'HDFC';
+    else if (/ICICI\s+BANK|ICIC0/i.test(norm)) bank = 'ICICI';
+    else if (/AXIS\s+BANK|UTIB0/i.test(norm)) bank = 'AXIS';
+    else if (/KOTAK\s+MAHINDRA|KKBK0/i.test(norm)) bank = 'KOTAK';
+    data.bank = bank;
+    
+    // Savings interest patterns (bank-specific + generic)
+    const savingsPatterns = {
+        SBI: [/INT\.?\s*PB\s+ON\s+SB[^\d]*([\d,]+\.\d{2})/gi, /SB\s+INT\s+CREDIT[^\d]*([\d,]+\.\d{2})/gi],
+        HDFC: [/INT\s+PAID[^\d]*([\d,]+\.\d{2})/gi, /INTEREST\s+PAID[^\d]*([\d,]+\.\d{2})/gi],
+        ICICI: [/CREDIT\s+INTEREST\s+CAPITALISED[^\d]*([\d,]+\.\d{2})/gi, /INT\.?\s*CR(?:EDIT)?[^\d]*([\d,]+\.\d{2})/gi],
+        AXIS: [/INT\s+PD\s+ON\s+BAL[^\d]*([\d,]+\.\d{2})/gi, /INTEREST\s+PAID[^\d]*([\d,]+\.\d{2})/gi],
+        KOTAK: [/INT\s+PAID[^\d]*([\d,]+\.\d{2})/gi, /CREDIT\s+INT(?:EREST)?[^\d]*([\d,]+\.\d{2})/gi],
+        unknown: [/INT(?:EREST)?\s*(?:PAID|CREDIT|CR)[^\d]*([\d,]+\.\d{2})/gi, /CREDIT\s+INTEREST[^\d]*([\d,]+\.\d{2})/gi]
+    };
+    const bankPatterns = savingsPatterns[bank] || savingsPatterns.unknown;
+    for (const rx of bankPatterns) {
+        const matches = [...norm.matchAll(rx)];
+        for (const m of matches) data.interestSavings += parseNum(m[1]);
+    }
+    
+    // FD interest patterns (generic across banks)
+    const fdPatterns = [
+        /FD\s*INT(?:EREST)?\s*(?:PAID|CREDIT|CR)?[^\d]*([\d,]+\.\d{2})/gi,
+        /TDR\s*INT(?:EREST)?[^\d]*([\d,]+\.\d{2})/gi,
+        /STDR\s*INT[^\d]*([\d,]+\.\d{2})/gi,
+        /INT\.?\s*(?:PB\s+)?ON\s+(?:FD|TDR|FDR)[^\d]*([\d,]+\.\d{2})/gi,
+        /FIXED\s+DEP(?:OSIT)?\s+INT[^\d]*([\d,]+\.\d{2})/gi,
+        /TERM\s+DEP\s+INT[^\d]*([\d,]+\.\d{2})/gi
+    ];
+    for (const rx of fdPatterns) {
+        const matches = [...norm.matchAll(rx)];
+        for (const m of matches) data.interestFD += parseNum(m[1]);
+    }
+    
+    // TDS deducted by bank
+    const tdsPatterns = [
+        /TDS\s*(?:ON|DED(?:UCTED)?)\s*(?:FD\s*)?(?:SB\s*)?INT[^\d]*([\d,]+\.\d{2})/gi,
+        /TDS\s+RECOVERY[^\d]*([\d,]+\.\d{2})/gi,
+        /IT\s+TDS[^\d]*([\d,]+\.\d{2})/gi
+    ];
+    for (const rx of tdsPatterns) {
+        const matches = [...norm.matchAll(rx)];
+        for (const m of matches) data.tdsBank += parseNum(m[1]);
+    }
+    
+    // Dividend credits
+    const divPatterns = [
+        /(?:NEFT|RTGS|NECS|NACH|ECS|ACH)[^\d]*DIV(?:IDEND)?[^\d]*([\d,]+\.\d{2})/gi
+    ];
+    for (const rx of divPatterns) {
+        const matches = [...norm.matchAll(rx)];
+        for (const m of matches) data.dividend += parseNum(m[1]);
+    }
+    
+    // Account number
+    const acctM = norm.match(/(?:Account\s*(?:No|Number|#)|A\/c\s*No)\s*[:\-]?\s*(\d{8,18})/i);
+    if (acctM) data.accountNumber = acctM[1];
+    
     return data;
 }
 
@@ -472,85 +638,154 @@ function buildPrompt(docType, preParseData) {
 }`;
 
     const preInfo = preParseData && Object.keys(preParseData).length > 0 
-        ? `\n\nPRE-EXTRACTED DATA (verify and use these if the text is hard to read):\n${JSON.stringify(preParseData, null, 2)}` 
+        ? `\n\nPRE-EXTRACTED DATA (these were extracted via regex — use as ground truth, verify against text):\n${JSON.stringify(preParseData, null, 2)}` 
         : '';
 
     const docPrompts = {
-        form16: `You are an expert Indian CA analyzing a FORM 16 (TDS Certificate from employer) for FY 2025-26.
-Form 16 has two parts:
-- Part A: TAN of employer, TDS deducted quarter-wise
-- Part B: Detailed salary breakup, deductions under Chapter VI-A, tax computation
-Key fields to find: Gross Salary (under sec 17(1)), Value of perquisites (17(2)), Profits in lieu of salary (17(3)), 
-Allowances exempt u/s 10 (HRA, LTA), Standard deduction, Professional tax, 
-Chapter VI-A deductions (80C, 80CCD, 80D, etc), Total tax deducted.`,
+        form16: `You are an expert Indian CA analyzing a FORM 16 (TDS Certificate from employer).
+Form 16 has Part A (TAN, TDS quarters) and Part B (salary breakup, deductions, tax computation).
+Key: Gross Salary=sec 17(1), Perquisites=17(2), HRA/LTA exempt u/s 10, Standard deduction=₹75000(new)/50000(old),
+Professional tax, Chapter VI-A deductions (80C, 80CCD, 80D etc.), Total tax deducted.`,
 
-        ais: `You are an expert Indian CA analyzing an AIS (Annual Information Statement) from the Income Tax portal.
-AIS structure: 
-- Part A: General information (PAN, Name, DOB, Aadhaar)
-- Part B1: TDS/TCS details (deductor name, amount paid, TDS deducted)
-- Part B2: SFT (financial transactions) - sales of securities, mutual funds, deposits
-- Part B3: Payment of taxes (advance tax, self-assessment)
-- Part B4: Demands and Refunds
-IMPORTANT: AIS text from PDFs often has jumbled columns. Look for keywords like "Salary", "Interest", "Dividend", 
-"Aggregate", "Processed value". Numbers after these labels are the amounts.
-Map: Salary→grossSalary, Interest from Savings→interestSavings, Interest from Deposits→interestFD, 
-Dividend→dividend, Rent Received→rentalIncome. TDS amounts go to tdsDeducted.`,
+        ais: `You are an expert Indian CA analyzing an AIS (Annual Information Statement) from incometax.gov.in.
+EXACT STRUCTURE:
+Part A: PAN, Name, DOB
+Part B1 - TDS: Categories like "Salary (u/s 192)", "Interest other than Interest on Securities (u/s 194A)", "Dividend (u/s 194)"
+  Each has: Information Category | Description | Source (TAN+Name) | Value (as reported) | Value (as modified) | Count | Status
+Part B2 - TCS: "TCS on Sale of Goods (u/s 206C(1H))" etc.
+Part B3 - SFT: "Purchase of Mutual Fund", "Sale/Redemption of Mutual Fund", "Cash Deposits" etc.
+Part B4 - Payment of Taxes: "Advance Tax", "Self Assessment Tax"
+Part B5 - Demand and Refund
+Part B6 - Other Information: "Interest from Savings Account", "Interest from Deposit", "Dividend", "Rent received", 
+  "Capital Gains on Sale of Equity Shares", "Capital Gains on Sale of Mutual Funds - Equity/Debt"
 
-        tis: `You are an expert Indian CA analyzing a TIS (Taxpayer Information Summary) from the Income Tax portal.
-TIS is a summary of AIS with categories:
-- Each category shows: SR.NO, CATEGORY NAME, PROCESSED VALUE (what IT dept computed), ACCEPTED VALUE
-- Categories include: Salary, Interest from Savings Bank, Interest from Deposits, Dividend, 
-  Rent Payment, Sale of Securities/Mutual Fund, Purchase/Sale of Immovable Property
-IMPORTANT: Use the PROCESSED VALUE column (first number after category name) for amounts.
-Map: Salary→grossSalary, Interest from Savings→interestSavings, Interest from Deposits→interestFD,
-Dividend→dividend, Rent→rentalIncome, Sale of Securities→use for capital gains estimation.`,
+SAMPLE TEXT from AIS PDF extraction:
+"B1 - TDS Information
+Salary (u/s 192)
+ABCDE1234F - ABC TECHNOLOGIES PVT LTD  12,50,000.00  12,50,000.00  1  Information is confirmed
+Interest other than Interest on Securities (u/s 194A)
+XYZB0001234 - STATE BANK OF INDIA  45,000.00  45,000.00  2  Information is confirmed
+B6 - Other Information
+Interest from Savings Account
+STATE BANK OF INDIA - A/C XXXX1234  12,345.00  12,345.00  1  Information is confirmed
+Interest from Deposit
+STATE BANK OF INDIA - FD A/C XXXX9012  45,000.00  45,000.00  1  Information is confirmed"
 
-        '26as': `You are an expert Indian CA analyzing Form 26AS (Tax Credit Statement) from TRACES.
-Structure:
-- Part A: TDS on income (employer TDS on salary under 192, bank TDS on interest under 194A, etc.)
-- Part A1: TDS on income other than salary (194J, 194H etc.)  
-- Part A2: TDS on sale of immovable property (194IA)
-- Part B: TCS collected
-- Part C: Tax paid (advance tax, self-assessment tax challan details)
-- Part D: Refunds
-IMPORTANT: Sum up ALL TDS from Part A as tdsDeducted. Part C amounts are advanceTaxPaid/selfAssessmentTax.
-The deductor with section code 192 is the employer - extract their name as employerName.`,
+MAP: Salary(u/s 192) reported value→grossSalary, Interest from Savings Account→interestSavings (SUM all rows),
+Interest from Deposit OR 194A interest→interestFD, Dividend→dividend, Rent received→rentalIncome,
+Capital Gains entries→stcgEquity/ltcgEquity (flag as sale values not gains), TDS→tdsDeducted.
+IMPORTANT: Values appear as "12,50,000.00" (Indian format). Multiple rows per category = SUM them.`,
+
+        tis: `You are an expert Indian CA analyzing a TIS (Taxpayer Information Summary) from incometax.gov.in.
+TIS is ONE SIMPLE TABLE with columns: SR.NO | CATEGORY | PROCESSED VALUE | ACCEPTED VALUE.
+The Processed Value is what matters.
+
+EXACT CATEGORIES (in order):
+1. Salary
+2. Rent Received
+3. Dividend Income
+4. Interest from Savings Account
+5. Interest from Deposit
+6. Interest from Income Tax Refund
+7. Interest from Others
+8. Receipts from Transfer of Equity Share / MF / Share (STT Paid)
+9. Receipts from Transfer of Equity Share / MF / Share (STT Not Paid)
+10. Receipts from Transfer of Debt MF / Bonds
+11. Interest on Bonds/Debentures
+12. Purchase of Immovable Property
+13. Sale of Immovable Property
+14. Cash Deposits
+15. Cash Withdrawals
+16. GST Turnover as per GSTR-3B
+17. Foreign Remittance / LRS
+18. Other TDS/TCS Information
+
+SAMPLE EXTRACTED TEXT:
+"TAXPAYER INFORMATION SUMMARY
+Assessment Year: 2025-26
+SR.NO  CATEGORY  PROCESSED VALUE  ACCEPTED VALUE
+1  Salary  12,50,000  12,50,000
+3  Dividend Income  15,750  15,750
+4  Interest from Savings Account  20,777  20,777
+5  Interest from Deposit  45,000  45,000
+8  Receipts from Transfer of Equity Share / MF / Share (STT Paid)  3,25,000  3,25,000"
+
+MAP: Salary→grossSalary, Interest from Savings Account→interestSavings, Interest from Deposit→interestFD,
+Dividend Income→dividend, Rent Received→rentalIncome, Interest from Others→interestOther,
+Receipts from Transfer(STT Paid)→ltcgEquity (sale value only), Receipts Transfer(STT Not Paid)→stcgOther.
+IMPORTANT: Zero-value rows may be omitted. Long category names wrap across lines. Use PROCESSED VALUE column.`,
+
+        '26as': `You are an expert Indian CA analyzing Form 26AS (Annual Tax Statement) from TRACES.
+STRUCTURE:
+Part A: TDS details. Columns: Sr.No | Name of Deductor | TAN | Section | Amount Paid/Credited | Tax Deducted | TDS Deposited
+  Section codes: 192=Salary, 194A=Interest, 194=Dividend, 194C=Contract, 194I=Rent, 194IB=Rent by individual,
+  194IA=Property sale, 194H=Commission. Status: F=Final, P=Provisional
+Part A1: TDS for 15G/15H (usually empty)
+Part A2: TDS on property (194IA/194IB/194M) - uses PAN not TAN
+Part B: TCS collected
+Part C: Tax Paid (advance/self-assessment). Columns: BSR Code | Date | Challan No | Tax Paid | Surcharge | Cess
+
+SAMPLE TEXT:
+"Part A - Details of Tax Deducted at Source
+1  ABC TECHNOLOGIES PVT LTD  DELA12345B  12,50,000.00  1,25,000.00  1,25,000.00
+  192  15/06/2024  2,08,333.00  20,833.00  20,833.00  F
+2  STATE BANK OF INDIA  SBIH00001A  45,000.00  4,500.00  4,500.00
+  194A  30/06/2024  45,000.00  4,500.00  4,500.00  F
+Part C
+1  0510101  15/09/2024  12345  25,000.00  0.00  1,000.00  0.00  26,000.00"
+
+MAP: Section 192 Amount Paid→grossSalary, Section 192 deductor→employerName, 
+Section 194A Amount→interestSavings+interestFD, Section 194 Amount→dividend,
+SUM all Tax Deducted→tdsDeducted, Part C Tax Paid→advanceTaxPaid.`,
 
         bank: `You are an expert Indian CA analyzing a BANK STATEMENT.
-Extract:
-- Interest credited (look for entries like "INT PAID", "INTEREST", "BY INTEREST", "INT.PAY", "NEFT INT")
-- Total credits and debits if summary is available
-- The interest amount should go to interestSavings (for savings account) or interestFD (for FD)
-IMPORTANT: Bank statement formats vary. Focus on finding interest income entries and summing them up.
-Look for salary credits (NEFT/RTGS from companies) to cross-verify salary income.`,
+Interest narration patterns by bank:
+SBI: "INT.PB ON SB A/C" (savings), "FD INT CREDIT" (FD), "TDS ON FD INT" (TDS)
+HDFC: "INT PAID" (savings), "FD INT PAID" (FD), "TDS ON INT" (TDS)
+ICICI: "CREDIT INTEREST CAPITALISED" (savings), "FD INT CREDIT" (FD)
+AXIS: "INT PD ON BAL" (savings), "FD INT CREDIT" (FD)
+KOTAK: "INT PAID" (savings), "FD INT CREDIT" (FD)
+Dividends: "NEFT/RTGS/NACH/ECS...DIV/DIVIDEND..."
+TDS: "TDS ON FD INT", "TDS DEDUCTED", "TDS ON INT"
+
+SAMPLE TEXT (SBI):
+"01/04/2024 NEFT-N1234567-ABC TECHNOLOGIES-SALARY APR 24  1,04,167.00  2,50,000.00
+30/06/2024 INT.PB ON SB A/C-XXXX5678  3,456.00  3,53,456.00
+30/06/2024 FD INT CREDIT-TDR-123456789  11,250.00  3,64,706.00
+30/06/2024 TDS ON FD INT-TDR-123456789  1,125.00  3,63,581.00"
+
+MAP: SUM all savings interest credits→interestSavings, SUM all FD interest→interestFD,
+SUM all dividend credits→dividend, SUM TDS debits→tdsDeducted.`,
 
         salary: `You are an expert Indian CA analyzing a SALARY SLIP / PAY SLIP.
-Extract monthly components and MULTIPLY BY 12 for annual amounts:
-- Basic Pay, DA, HRA, Special Allowance, LTA, Medical, Conveyance, Other Allowances
-- Deductions: PF (→80C), Professional Tax, ESI
-Map: Monthly Basic×12→basic, Monthly HRA×12→hra, Monthly DA×12→da, 
-Monthly Special×12→specialAllowances, Monthly PF×12→sec80C`
+Extract MONTHLY components and MULTIPLY BY 12 for annual amounts:
+Earnings: Basic Pay, DA, HRA, Special/Other Allowance, LTA, Medical, Conveyance
+Deductions: PF (→sec80C), Professional Tax, ESI, TDS
+MAP: Monthly Basic×12→basic, Monthly HRA×12→hra, Monthly DA×12→da, Monthly Special×12→specialAllowances,
+Monthly PF×12→sec80C, Monthly Prof Tax×12→professionalTax`
     };
 
     const docPrompt = docPrompts[docType] || docPrompts.form16;
 
     return `${docPrompt}
 
-Rules: All amounts in INR as numbers (no commas/symbols). If not found, use 0. Be precise.
+Rules: All amounts in INR as numbers (no commas/symbols). If not found, use 0. IMPORTANT: SUM multiple entries for same category.
 Return ONLY valid JSON matching this structure:
 ${jsonSchema}${preInfo}`;
 }
 
 async function callAI(text, docType) {
-    // Step 1: Pre-parse with regex
+    // Step 1: Pre-parse with regex (fast, client-side)
     let preParseData = {};
     if (docType === 'ais') preParseData = preParseAIS(text);
     else if (docType === 'tis') preParseData = preParseTIS(text);
     else if (docType === 'bank') preParseData = preParseBankStatement(text);
     else if (docType === '26as') preParseData = preParse26AS(text);
+    
+    console.log(`[SmartUpload] Pre-parsed ${docType}:`, preParseData);
 
-    // Step 2: Build document-specific prompt
-    const prompt = buildPrompt(docType, preParseData) + `\n\nDocument type: ${docType}\n\n--- DOCUMENT TEXT ---\n${text.substring(0, 15000)}`;
+    // Step 2: Build document-specific prompt with pre-parsed data + sample text
+    const prompt = buildPrompt(docType, preParseData) + `\n\nDocument type: ${docType}\n\n--- DOCUMENT TEXT ---\n${text.substring(0, 18000)}`;
     const key = _dk();
     
     for (let attempt = 1; attempt <= 3; attempt++) {
