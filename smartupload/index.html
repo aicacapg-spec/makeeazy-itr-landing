@@ -226,10 +226,14 @@ function handleFiles(fileList) {
 function guessDocType(name) {
     const n = name.toLowerCase();
     if (n.includes('form16')||n.includes('form 16')||n.includes('f16')||n.includes('form-16')) return 'form16';
+    if (n.includes('_ais')||n.includes('-ais')||n.includes('ais_')||n.includes('ais-')||n.includes('ais.')) return 'ais';
+    if (n.includes('_tis')||n.includes('-tis')||n.includes('tis_')||n.includes('tis-')||n.includes('tis.')) return 'tis';
     if (n.includes('ais')) return 'ais'; if (n.includes('tis')) return 'tis';
     if (n.includes('26as')||n.includes('26 as')) return '26as';
     if (n.includes('bank')||n.includes('statement')||n.includes('passbook')) return 'bank';
     if (n.includes('salary')||n.includes('payslip')||n.includes('slip')) return 'salary';
+    // AIS/TIS filenames are often PAN+DOB like 'brkpn4572n05121999.pdf'
+    if (/^[a-z]{5}\d{4}[a-z]\d{8}/i.test(n.replace(/[^a-z0-9]/gi, ''))) return 'ais';
     return 'form16';
 }
 
@@ -257,17 +261,104 @@ function removeFile(i) { uploadedFiles.splice(i,1); renderFileList(); }
 function clearAll() { uploadedFiles = []; renderFileList(); }
 
 // ===================== PDF TEXT EXTRACTION =====================
+// Derives password from AIS/TIS filename: lowercasePAN + DOB (ddmmyyyy)
+function derivePasswordFromFilename(filename) {
+    // Pattern: PAN(10chars) + DOB(8digits) e.g. 'brkpn4572n05121999'
+    const clean = filename.replace(/\.[^.]+$/, '').replace(/[^a-z0-9]/gi, '');
+    const m = clean.match(/^([a-z]{5}\d{4}[a-z])(\d{8})/i);
+    if (m) return m[1].toLowerCase() + m[2];
+    return null;
+}
+
 async function extractPdfText(file) {
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const pageText = content.items.map(item => item.str).join(' ');
-        fullText += pageText + '\n\n';
+    const data = new Uint8Array(arrayBuffer);
+    
+    // Try without password first
+    try {
+        const pdf = await pdfjsLib.getDocument({ data: data.slice() }).promise;
+        let fullText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            fullText += content.items.map(item => item.str).join(' ') + '\n\n';
+        }
+        if (fullText.trim().length > 50) {
+            console.log(`[SmartUpload] Extracted ${fullText.length} chars without password`);
+            return fullText;
+        }
+    } catch (e) {
+        console.log(`[SmartUpload] PDF needs password: ${e.message}`);
     }
-    return fullText;
+    
+    // Try with derived password from filename
+    const autoPassword = derivePasswordFromFilename(file.name);
+    if (autoPassword) {
+        try {
+            console.log(`[SmartUpload] Trying auto-password from filename...`);
+            const pdf = await pdfjsLib.getDocument({ data: data.slice(), password: autoPassword }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                fullText += content.items.map(item => item.str).join(' ') + '\n\n';
+            }
+            if (fullText.trim().length > 50) {
+                console.log(`[SmartUpload] ✅ Unlocked with auto-password! ${fullText.length} chars`);
+                return fullText;
+            }
+        } catch (e) {
+            console.log(`[SmartUpload] Auto-password failed: ${e.message}`);
+        }
+    }
+    
+    // Try with user-provided password
+    const userPassword = sessionStorage.getItem('pdf_password');
+    if (userPassword) {
+        try {
+            console.log(`[SmartUpload] Trying user-provided password...`);
+            const pdf = await pdfjsLib.getDocument({ data: data.slice(), password: userPassword }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                fullText += content.items.map(item => item.str).join(' ') + '\n\n';
+            }
+            if (fullText.trim().length > 50) {
+                console.log(`[SmartUpload] ✅ Unlocked with user password! ${fullText.length} chars`);
+                return fullText;
+            }
+        } catch (e) {
+            console.log(`[SmartUpload] User password failed: ${e.message}`);
+        }
+    }
+    
+    // Ask user for password
+    const manualPassword = prompt(
+        'This PDF appears to be password-protected.\n\n' +
+        'AIS/TIS password format: lowercasePAN + DOB\n' +
+        'Example: abcde1234f01011990\n\n' +
+        'Enter PDF password:'
+    );
+    if (manualPassword) {
+        sessionStorage.setItem('pdf_password', manualPassword);
+        try {
+            const pdf = await pdfjsLib.getDocument({ data: data.slice(), password: manualPassword }).promise;
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                fullText += content.items.map(item => item.str).join(' ') + '\n\n';
+            }
+            console.log(`[SmartUpload] ✅ Unlocked with manual password! ${fullText.length} chars`);
+            return fullText;
+        } catch (e) {
+            console.log(`[SmartUpload] Manual password failed: ${e.message}`);
+            throw new Error('Wrong password. AIS/TIS password = lowercasePAN + DOB (e.g. abcde1234f01011990)');
+        }
+    }
+    
+    throw new Error('Password required for this PDF. AIS/TIS from IT portal are password-protected.');
 }
 
 async function fileToBase64(file) {
