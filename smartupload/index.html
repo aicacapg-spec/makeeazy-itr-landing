@@ -273,6 +273,7 @@ function derivePasswordFromFilename(filename) {
 async function extractPdfText(file) {
     const arrayBuffer = await file.arrayBuffer();
     const data = new Uint8Array(arrayBuffer);
+    let needsPassword = false;
     
     // Try without password first
     try {
@@ -283,15 +284,24 @@ async function extractPdfText(file) {
             const content = await page.getTextContent();
             fullText += content.items.map(item => item.str).join(' ') + '\n\n';
         }
-        if (fullText.trim().length > 50) {
-            console.log(`[SmartUpload] Extracted ${fullText.length} chars without password`);
-            return fullText;
-        }
+        console.log(`[SmartUpload] Extracted ${fullText.trim().length} chars without password`);
+        return fullText; // Return whatever we got (even if empty — vision fallback will handle it)
     } catch (e) {
-        console.log(`[SmartUpload] PDF needs password: ${e.message}`);
+        // Only try passwords if it's actually a password error
+        if (e.name === 'PasswordException' || e.message?.includes('password') || e.message?.includes('Password')) {
+            needsPassword = true;
+            console.log(`[SmartUpload] PDF is password-protected: ${e.message}`);
+        } else {
+            console.log(`[SmartUpload] PDF error (non-password): ${e.message}`);
+            return ''; // Return empty, vision fallback will handle
+        }
     }
     
-    // Try with derived password from filename
+    if (!needsPassword) return '';
+    
+    // --- Password-protected PDF handling ---
+    
+    // Try auto-password from filename (PAN+DOB pattern)
     const autoPassword = derivePasswordFromFilename(file.name);
     if (autoPassword) {
         try {
@@ -303,20 +313,17 @@ async function extractPdfText(file) {
                 const content = await page.getTextContent();
                 fullText += content.items.map(item => item.str).join(' ') + '\n\n';
             }
-            if (fullText.trim().length > 50) {
-                console.log(`[SmartUpload] ✅ Unlocked with auto-password! ${fullText.length} chars`);
-                return fullText;
-            }
+            console.log(`[SmartUpload] ✅ Unlocked with auto-password! ${fullText.trim().length} chars`);
+            return fullText;
         } catch (e) {
             console.log(`[SmartUpload] Auto-password failed: ${e.message}`);
         }
     }
     
-    // Try with user-provided password
+    // Try saved password
     const userPassword = sessionStorage.getItem('pdf_password');
     if (userPassword) {
         try {
-            console.log(`[SmartUpload] Trying user-provided password...`);
             const pdf = await pdfjsLib.getDocument({ data: data.slice(), password: userPassword }).promise;
             let fullText = '';
             for (let i = 1; i <= pdf.numPages; i++) {
@@ -324,19 +331,17 @@ async function extractPdfText(file) {
                 const content = await page.getTextContent();
                 fullText += content.items.map(item => item.str).join(' ') + '\n\n';
             }
-            if (fullText.trim().length > 50) {
-                console.log(`[SmartUpload] ✅ Unlocked with user password! ${fullText.length} chars`);
-                return fullText;
-            }
+            console.log(`[SmartUpload] ✅ Unlocked with saved password! ${fullText.trim().length} chars`);
+            return fullText;
         } catch (e) {
-            console.log(`[SmartUpload] User password failed: ${e.message}`);
+            console.log(`[SmartUpload] Saved password failed`);
         }
     }
     
-    // Ask user for password
+    // Ask user for password (only when PDF is actually locked)
     const manualPassword = prompt(
-        'This PDF appears to be password-protected.\n\n' +
-        'AIS/TIS password format: lowercasePAN + DOB\n' +
+        'This PDF is password-protected.\n\n' +
+        'AIS/TIS password = lowercasePAN + DOB\n' +
         'Example: abcde1234f01011990\n\n' +
         'Enter PDF password:'
     );
@@ -350,15 +355,14 @@ async function extractPdfText(file) {
                 const content = await page.getTextContent();
                 fullText += content.items.map(item => item.str).join(' ') + '\n\n';
             }
-            console.log(`[SmartUpload] ✅ Unlocked with manual password! ${fullText.length} chars`);
+            console.log(`[SmartUpload] ✅ Unlocked with manual password! ${fullText.trim().length} chars`);
             return fullText;
         } catch (e) {
-            console.log(`[SmartUpload] Manual password failed: ${e.message}`);
-            throw new Error('Wrong password. AIS/TIS password = lowercasePAN + DOB (e.g. abcde1234f01011990)');
+            throw new Error('Wrong password. Format: lowercasePAN + DOB (e.g. abcde1234f01011990)');
         }
     }
     
-    throw new Error('Password required for this PDF. AIS/TIS from IT portal are password-protected.');
+    throw new Error('Password required for this PDF.');
 }
 
 async function fileToBase64(file) {
