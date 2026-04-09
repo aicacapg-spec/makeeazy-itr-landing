@@ -407,18 +407,19 @@ async function startAnalysis() {
             let result;
             
             if (isPdf && text.length > 50) {
-                // Text-based analysis (works with Groq)
+                // Text-based analysis (works with Groq text model)
                 result = await callAI(text, uf.docType);
             } else if (isPdf) {
-                // PDF with no extractable text (likely scanned/password-protected)
-                toast(`${uf.file.name}: Could not extract text. Ensure the PDF is not password-protected or scanned.`, 'error');
-                extractedData._sources.push({ name: uf.file.name, type: uf.docType, status: 'error', error: 'No text found in PDF — may be scanned or password-protected' });
-                processed++; continue;
+                // PDF with no extractable text — use vision model
+                console.log(`[SmartUpload] Text extraction got ${text.length} chars, falling back to vision model...`);
+                updateProgress(-1, `🔍 Using AI Vision for ${uf.file.name}...`);
+                toast(`${uf.file.name}: Scanned PDF detected — using AI Vision (slower but works!)`, 'info');
+                result = await callAIVision(uf.file, uf.docType, 'pdf');
             } else {
-                // Image files — not supported with Groq (text-only)
-                toast(`${uf.file.name}: Please upload PDF files instead of images for analysis.`, 'warn');
-                extractedData._sources.push({ name: uf.file.name, type: uf.docType, status: 'error', error: 'Upload PDF instead of image' });
-                processed++; continue;
+                // Image files (JPG/PNG) — use vision model directly
+                console.log(`[SmartUpload] Image file, using vision model...`);
+                updateProgress(-1, `🔍 Using AI Vision for ${uf.file.name}...`);
+                result = await callAIVision(uf.file, uf.docType, 'image');
             }
             
             mergeExtractedData(result, uf.docType, uf.file.name);
@@ -932,19 +933,83 @@ async function callAI(text, docType) {
     }
 }
 
-async function callGeminiVision(base64Data, mimeType, docType) {
-    throw new Error('Image analysis not supported in current mode. Please upload PDF files.');
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            contents: [{ parts: [{ text: PROMPT_BASE + `\nDocument type: ${docType}` }, { inline_data: { mime_type: mimeType, data: base64Data } }] }],
-            generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
-        })
-    });
-    if (!r.ok) throw new Error(`Gemini error ${r.status}`);
-    const data = await r.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return JSON.parse(text);
+async function callAIVision(file, docType, fileType) {
+    const key = _dk();
+    const prompt = buildPrompt(docType, {}) + `\n\nDocument type: ${docType}\nIMPORTANT: This is a scanned/image-based document. Extract ALL visible text and financial data from the image(s).`;
+    
+    let imageContents = [];
+    
+    if (fileType === 'pdf') {
+        // Render PDF pages to canvas → base64 images
+        console.log('[SmartUpload] Rendering PDF pages to images...');
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+        const maxPages = Math.min(pdf.numPages, 4); // Max 4 pages (Groq limit: 5 images)
+        
+        for (let i = 1; i <= maxPages; i++) {
+            updateProgress(-1, `Rendering page ${i}/${maxPages}...`);
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 2.0 }); // 2x for readability
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            await page.render({ canvasContext: ctx, viewport }).promise;
+            const b64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            imageContents.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}` } });
+            console.log(`[SmartUpload] Page ${i} rendered: ${Math.round(b64.length/1024)}KB`);
+        }
+    } else {
+        // Raw image file (JPG/PNG)
+        const b64 = await fileToBase64(file);
+        const mime = file.type || 'image/jpeg';
+        imageContents.push({ type: 'image_url', image_url: { url: `data:${mime};base64,${b64}` } });
+    }
+    
+    // Build vision message: text prompt + images
+    const messages = [{
+        role: 'user',
+        content: [
+            { type: 'text', text: prompt },
+            ...imageContents
+        ]
+    }];
+    
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            console.log(`[SmartUpload] Calling Groq Vision (attempt ${attempt})...`);
+            const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+                body: JSON.stringify({
+                    model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+                    messages: messages,
+                    temperature: 0.1,
+                    max_tokens: 4096,
+                    response_format: { type: 'json_object' }
+                })
+            });
+            
+            if (r.status === 429) {
+                updateProgress(-1, `Rate limited, retrying in ${attempt * 5}s...`);
+                await new Promise(r => setTimeout(r, attempt * 5000));
+                continue;
+            }
+            if (!r.ok) { const e = await r.json(); throw new Error(e.error?.message || `Groq Vision error ${r.status}`); }
+            
+            const data = await r.json();
+            const responseText = data.choices?.[0]?.message?.content;
+            console.log('[SmartUpload] Vision response:', responseText?.substring(0, 200));
+            
+            if (!responseText) throw new Error('Empty vision response');
+            try { return JSON.parse(responseText); }
+            catch { const m = responseText.match(/\{[\s\S]*\}/); if (m) return JSON.parse(m[0]); throw new Error('Invalid JSON from vision'); }
+        } catch (err) {
+            if (attempt === 3) throw err;
+            if (err.message.includes('429')) continue;
+            throw err;
+        }
+    }
 }
 
 // ===================== DATA MERGE =====================
