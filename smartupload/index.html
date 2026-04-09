@@ -316,19 +316,18 @@ async function startAnalysis() {
             let result;
             
             if (isPdf && text.length > 50) {
-                // Text-based analysis (works with Groq + Gemini)
+                // Text-based analysis (works with Groq)
                 result = await callAI(text, uf.docType);
+            } else if (isPdf) {
+                // PDF with no extractable text (likely scanned/password-protected)
+                toast(`${uf.file.name}: Could not extract text. Ensure the PDF is not password-protected or scanned.`, 'error');
+                extractedData._sources.push({ name: uf.file.name, type: uf.docType, status: 'error', error: 'No text found in PDF — may be scanned or password-protected' });
+                processed++; continue;
             } else {
-                // Image-based: only Gemini supports vision
-                if (currentProvider === 'gemini') {
-                    const b64 = await fileToBase64(uf.file);
-                    const mime = uf.file.type || 'image/jpeg';
-                    result = await callGeminiVision(b64, mime, uf.docType);
-                } else {
-                    toast(`${uf.file.name}: Images require Gemini provider`, 'warn');
-                    extractedData._sources.push({ name: uf.file.name, type: uf.docType, status: 'error', error: 'Image files need Gemini' });
-                    processed++; continue;
-                }
+                // Image files — not supported with Groq (text-only)
+                toast(`${uf.file.name}: Please upload PDF files instead of images for analysis.`, 'warn');
+                extractedData._sources.push({ name: uf.file.name, type: uf.docType, status: 'error', error: 'Upload PDF instead of image' });
+                processed++; continue;
             }
             
             mergeExtractedData(result, uf.docType, uf.file.name);
