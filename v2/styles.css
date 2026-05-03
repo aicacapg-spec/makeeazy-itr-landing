@@ -314,6 +314,12 @@ ul { list-style: none; }
 .persona-problem { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
 .persona-solution { font-size: 14px; color: var(--navy); font-weight: 600; margin-bottom: 20px; line-height: 1.6; }
 .persona-card .btn { margin-top: auto; width: 100%; }
+.persona-cta {
+  margin-top: auto; font-size: 14px; font-weight: 700;
+  color: var(--orange); display: inline-flex; align-items: center; gap: 4px;
+  padding: 8px 0; transition: var(--transition); border-bottom: 2px solid transparent;
+}
+.persona-cta:hover { border-bottom-color: var(--orange); transform: translateX(4px); }
 
 /* ── How It Works ── */
 .how-section { background: var(--white); }
