@@ -523,15 +523,6 @@ const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxfaabMMk3Wq19m1_QJj
 async function storeReport(pan, inputs, taxRes, insightRes) {
     if (!SHEETS_URL) { console.log('[Sheets] URL not configured, skipping'); return; }
     try {
-        // Generate PDF base64 for server storage
-        let pdfBase64 = '';
-        try {
-            const enrichedInputs = { ...inputs, _incomeType: selectedType, name: extractedData.personalInfo?.name || '' };
-            pdfBase64 = generateReportBase64(taxRes, insightRes, enrichedInputs, pan);
-            console.log('[PDF] Generated, size:', Math.round(pdfBase64.length / 1024), 'KB');
-        } catch (e) { console.error('[PDF] Generation error:', e); }
-
-        // Store everything in one request via sendBeacon
         const payload = {
             pan, name: extractedData.personalInfo?.name || '',
             mobile: '', email: '',
@@ -543,22 +534,12 @@ async function storeReport(pan, inputs, taxRes, insightRes) {
             regimeSavings: taxRes.absSavings,
             oldTax: taxRes.old.roundedTax,
             newTax: taxRes.new.roundedTax,
-            reportData: JSON.stringify({ inputs, taxResult: taxRes, insights: insightRes }),
-            pdfBase64: pdfBase64
+            reportData: JSON.stringify({ inputs, taxResult: taxRes, insights: insightRes })
         };
 
         const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain' });
-        const sent = navigator.sendBeacon(SHEETS_URL, blob);
-        
-        if (sent) {
-            console.log('[Sheets] Report + PDF sent for PAN:', pan);
-        } else {
-            // Fallback: send data without PDF (too large for sendBeacon)
-            console.warn('[Sheets] sendBeacon failed (payload too large), sending without PDF');
-            const smallPayload = { ...payload, pdfBase64: '' };
-            const smallBlob = new Blob([JSON.stringify(smallPayload)], { type: 'text/plain' });
-            navigator.sendBeacon(SHEETS_URL, smallBlob);
-        }
+        navigator.sendBeacon(SHEETS_URL, blob);
+        console.log('[Sheets] Report stored for PAN:', pan);
     } catch (e) { console.error('[Sheets] Store error:', e); }
 }
 
