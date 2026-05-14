@@ -111,9 +111,18 @@
         <span class="info-label">Recommended Regime</span>
         <span class="info-value" id="resRegime">—</span>
       </div>
+      <div class="info-row" id="pdfRow" style="display:none;">
+        <span class="info-label">PDF Report</span>
+        <span class="info-value"><a id="resPdfLink" href="#" target="_blank" style="color:#16a34a; text-decoration:none;">📄 Open PDF</a></span>
+      </div>
+      
+      <div id="noPdfMsg" style="display:none; text-align:center; padding:12px; background:#fef3c7; border-radius:8px; margin-top:12px; color:#92400e; font-size:13px;">
+        ⚠️ No PDF generated yet for this entry
+        <button class="btn" style="display:block; margin:8px auto 0; background:#d97706; color:#fff; padding:8px 16px; font-size:12px;" onclick="regeneratePdf()">🔄 Generate PDF Now</button>
+      </div>
       
       <button class="btn btn-green" id="downloadBtn" onclick="generateAndDownload()">
-        📄 Generate & Download PDF Report
+        📄 Download PDF (Client-side)
       </button>
     </div>
   </div>
@@ -189,7 +198,47 @@ function displayResult(data) {
     document.getElementById('resInsights').textContent = (ins.counts?.total || 0) + ' insights';
     document.getElementById('resRegime').textContent = rec === 'old' ? 'Old Regime' : rec === 'new' ? 'New Regime' : 'Either';
     
+    // PDF URL
+    if (data.pdfUrl && data.pdfUrl.startsWith('http')) {
+        document.getElementById('pdfRow').style.display = 'flex';
+        document.getElementById('resPdfLink').href = data.pdfUrl;
+        document.getElementById('noPdfMsg').style.display = 'none';
+    } else {
+        document.getElementById('pdfRow').style.display = 'none';
+        document.getElementById('noPdfMsg').style.display = 'block';
+    }
+    
     document.getElementById('resultCard').classList.add('active');
+}
+
+async function regeneratePdf() {
+    const pan = currentData?.pan;
+    if (!pan) return;
+    
+    const msgEl = document.getElementById('noPdfMsg');
+    msgEl.innerHTML = '<span class="spinner"></span> Generating PDF on server...';
+    msgEl.style.background = '#dbeafe';
+    msgEl.style.color = '#1e40af';
+    
+    try {
+        const res = await fetch(API_URL + '?action=regenerate&pan=' + pan);
+        const data = await res.json();
+        
+        if (data.pdfUrl && data.pdfUrl.startsWith('http')) {
+            document.getElementById('pdfRow').style.display = 'flex';
+            document.getElementById('resPdfLink').href = data.pdfUrl;
+            msgEl.style.display = 'none';
+            currentData.pdfUrl = data.pdfUrl;
+        } else {
+            msgEl.innerHTML = '❌ Failed to generate PDF. Try client-side download below.';
+            msgEl.style.background = '#fee2e2';
+            msgEl.style.color = '#dc2626';
+        }
+    } catch (e) {
+        msgEl.innerHTML = '❌ Network error. Try client-side download below.';
+        msgEl.style.background = '#fee2e2';
+        msgEl.style.color = '#dc2626';
+    }
 }
 
 function generateAndDownload() {
