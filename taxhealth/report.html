@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MakeEazy — Tax Report Lookup</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='4' width='10' height='24' rx='2' fill='%2332509F'/%3E%3Crect x='14' y='8' width='10' height='20' rx='2' fill='%234A6BC5'/%3E%3Crect x='20' y='4' width='10' height='24' rx='2' fill='%2332509F'/%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: linear-gradient(135deg, #eef2f8 0%, #dce4f2 100%); min-height: 100vh; padding: 20px; }
+  .container { max-width: 600px; margin: 40px auto; }
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(50,80,159,0.12); padding: 32px; margin-bottom: 20px; }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { color: #32509F; font-size: 22px; margin-bottom: 4px; }
+  .header p { color: #64748b; font-size: 13px; }
+  .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+  .search-box input { flex: 1; padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; text-transform: uppercase; outline: none; transition: border-color 0.2s; }
+  .search-box input:focus { border-color: #32509F; }
+  .btn { padding: 14px 24px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: linear-gradient(135deg, #32509F, #4A6BC5); color: #fff; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(50,80,159,0.3); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .btn-green { background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff; width: 100%; margin-top: 16px; padding: 16px; font-size: 16px; }
+  .btn-green:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(22,163,74,0.3); }
+  
+  .result { display: none; }
+  .result.active { display: block; }
+  .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+  .info-row:last-child { border-bottom: none; }
+  .info-label { color: #64748b; font-size: 13px; }
+  .info-value { color: #1a2d5e; font-weight: 600; font-size: 14px; }
+  .score-badge { display: inline-block; padding: 4px 14px; border-radius: 20px; color: #fff; font-weight: 700; font-size: 18px; }
+  .score-green { background: #16a34a; }
+  .score-amber { background: #d97706; }
+  .score-red { background: #dc2626; }
+  
+  .status { text-align: center; padding: 20px; color: #64748b; font-size: 14px; }
+  .status.error { color: #dc2626; }
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #e2e8f0; border-top-color: #32509F; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  .regime-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .regime-box { background: #f8f9fc; border-radius: 10px; padding: 16px; text-align: center; }
+  .regime-box.best { background: #f0fdf4; border: 2px solid #16a34a; }
+  .regime-box h3 { font-size: 12px; color: #64748b; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .regime-box .tax { font-size: 22px; font-weight: 700; color: #1a2d5e; }
+  .regime-box.best .tax { color: #16a34a; }
+  .savings-bar { background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff; text-align: center; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 15px; margin: 12px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <div class="header">
+      <h1>📋 Tax Report Lookup</h1>
+      <p>Enter PAN to retrieve report and generate PDF</p>
+    </div>
+    
+    <div class="search-box">
+      <input type="text" id="panInput" placeholder="Enter PAN (e.g., ABCDE1234F)" maxlength="10">
+      <button class="btn btn-primary" id="lookupBtn" onclick="lookupPAN()">Search</button>
+    </div>
+    
+    <div id="statusMsg" class="status" style="display:none;"></div>
+  </div>
+  
+  <div class="result" id="resultCard">
+    <div class="card">
+      <h2 style="color:#32509F; font-size:16px; margin-bottom:16px;">📊 Report Summary</h2>
+      
+      <div class="info-row">
+        <span class="info-label">PAN</span>
+        <span class="info-value" id="resPan">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Name</span>
+        <span class="info-value" id="resName">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Income Type</span>
+        <span class="info-value" id="resType">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Tax Health Score</span>
+        <span class="info-value"><span class="score-badge" id="resScore">—</span></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Band</span>
+        <span class="info-value" id="resBand">—</span>
+      </div>
+      
+      <div class="regime-compare">
+        <div class="regime-box" id="oldBox">
+          <h3>Old Regime</h3>
+          <div class="tax" id="resOldTax">—</div>
+        </div>
+        <div class="regime-box" id="newBox">
+          <h3>New Regime</h3>
+          <div class="tax" id="resNewTax">—</div>
+        </div>
+      </div>
+      
+      <div class="savings-bar" id="resSavings">—</div>
+      
+      <div class="info-row">
+        <span class="info-label">Insights Found</span>
+        <span class="info-value" id="resInsights">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Recommended Regime</span>
+        <span class="info-value" id="resRegime">—</span>
+      </div>
+      
+      <button class="btn btn-green" id="downloadBtn" onclick="generateAndDownload()">
+        📄 Generate & Download PDF Report
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="logo-data.js"></script>
+<script src="tax-engine.js"></script>
+<script src="insights-engine.js"></script>
+<script src="pdf-report.js"></script>
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxfaabMMk3Wq19m1_QJjKh3e0wMjBYWwCTgLrbZW6HVSC_bA68cRUJrArFv0mrT8ERsUA/exec';
+let currentData = null;
+
+document.getElementById('panInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') lookupPAN();
+});
+
+async function lookupPAN() {
+    const pan = document.getElementById('panInput').value.trim().toUpperCase();
+    if (!pan || pan.length !== 10) {
+        showStatus('Please enter a valid 10-character PAN', true);
+        return;
+    }
+    
+    showStatus('<span class="spinner"></span> Looking up ' + pan + '...');
+    document.getElementById('resultCard').classList.remove('active');
+    document.getElementById('lookupBtn').disabled = true;
+    
+    try {
+        const res = await fetch(API_URL + '?action=lookup&pan=' + pan);
+        const data = await res.json();
+        
+        if (data.status === 'found') {
+            currentData = data;
+            displayResult(data);
+            hideStatus();
+        } else {
+            showStatus('No report found for PAN: ' + pan, true);
+        }
+    } catch (e) {
+        showStatus('Network error. Please try again.', true);
+        console.error(e);
+    }
+    document.getElementById('lookupBtn').disabled = false;
+}
+
+function displayResult(data) {
+    const fmt = n => '\u20B9' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+    const rd = data.reportData || {};
+    const tax = rd.taxResult || {};
+    const ins = rd.insights || {};
+    
+    document.getElementById('resPan').textContent = data.pan;
+    document.getElementById('resName').textContent = data.name || 'Not provided';
+    document.getElementById('resType').textContent = (rd.inputs?._incomeType || rd.inputs?.incomeType || 'Salaried');
+    
+    // Score
+    const scoreEl = document.getElementById('resScore');
+    scoreEl.textContent = data.score + '/100';
+    scoreEl.className = 'score-badge ' + (data.score > 80 ? 'score-green' : data.score > 60 ? 'score-amber' : 'score-red');
+    
+    document.getElementById('resBand').textContent = data.band || '—';
+    document.getElementById('resOldTax').textContent = fmt(tax.old?.roundedTax);
+    document.getElementById('resNewTax').textContent = fmt(tax.new?.roundedTax);
+    
+    // Highlight recommended regime
+    const rec = tax.recommendation || data.regime;
+    document.getElementById('oldBox').className = 'regime-box' + (rec === 'old' ? ' best' : '');
+    document.getElementById('newBox').className = 'regime-box' + (rec === 'new' || rec === 'same' ? ' best' : '');
+    
+    const savings = tax.absSavings || data.regimeSavings || 0;
+    document.getElementById('resSavings').textContent = 'Savings: ' + fmt(savings);
+    document.getElementById('resInsights').textContent = (ins.counts?.total || 0) + ' insights';
+    document.getElementById('resRegime').textContent = rec === 'old' ? 'Old Regime' : rec === 'new' ? 'New Regime' : 'Either';
+    
+    document.getElementById('resultCard').classList.add('active');
+}
+
+function generateAndDownload() {
+    if (!currentData || !currentData.reportData) {
+        alert('No report data to generate PDF from.');
+        return;
+    }
+    
+    const btn = document.getElementById('downloadBtn');
+    btn.textContent = '⏳ Generating PDF...';
+    btn.disabled = true;
+    
+    try {
+        const rd = currentData.reportData;
+        const inputs = { ...rd.inputs, name: currentData.name || '' };
+        const doc = generateReportPDF(rd.taxResult, rd.insights, inputs, currentData.pan);
+        doc.save('TaxReport_' + currentData.pan + '.pdf');
+        btn.textContent = '✅ PDF Downloaded! Click to regenerate';
+    } catch (e) {
+        console.error('PDF generation error:', e);
+        btn.textContent = '❌ Error generating PDF';
+    }
+    btn.disabled = false;
+}
+
+function showStatus(msg, isError) {
+    const el = document.getElementById('statusMsg');
+    el.innerHTML = msg;
+    el.className = 'status' + (isError ? ' error' : '');
+    el.style.display = 'block';
+}
+function hideStatus() {
+    document.getElementById('statusMsg').style.display = 'none';
+}
+</script>
+</body>
+</html>
