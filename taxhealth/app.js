@@ -518,7 +518,7 @@ function updateGateScreen(pan) {
 }
 
 // ── Google Sheets Storage ──
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbys6nXVlUMcuwNdOYlp1jt1deveagLMU225ctxEAzA4EhCq6JSjERH2DbR_Edyl5X7YXg/exec';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxfaabMMk3Wq19m1_QJjKh3e0wMjBYWwCTgLrbZW6HVSC_bA68cRUJrArFv0mrT8ERsUA/exec';
 
 async function storeReport(pan, inputs, taxRes, insightRes) {
     if (!SHEETS_URL) { console.log('[Sheets] URL not configured, skipping'); return; }
