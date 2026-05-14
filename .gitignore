@@ -23,3 +23,12 @@
 !v2/styles.css
 !v2/script.js
 !v2/hero-illustration.png
+
+# Tax Optimizer Tool
+!taxhealth/
+!taxhealth/index.html
+!taxhealth/styles.css
+!taxhealth/app.js
+!taxhealth/tax-engine.js
+!taxhealth/insights-engine.js
+!taxhealth/pdf-report.js

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="Get your personalised Tax Optimization Report. Upload Form 16 or enter details — know your best regime, find hidden savings, and optimise your tax.">
+<title>Tax Optimization Report | MakeEazy</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='4' width='10' height='24' rx='2' fill='%2332509F'/%3E%3Crect x='14' y='8' width='10' height='20' rx='2' fill='%234A6BC5'/%3E%3Crect x='20' y='4' width='10' height='24' rx='2' fill='%2332509F'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="app-container">
+
+  <!-- ════ HEADER ════ -->
+  <div class="app-header">
+    <button class="back-btn" id="backBtn" style="display:none" onclick="goBack()">←</button>
+    <img src="../logo.png" alt="MakeEazy" class="logo" onerror="this.style.display='none'">
+    <h1>Tax Optimization Report</h1>
+    <div class="sub">FY 2025-26 · AY 2026-27</div>
+  </div>
+
+  <!-- ════ STEPS ════ -->
+  <div class="steps-row" id="stepsRow">
+    <div class="step-item active"><div class="step-num">1</div><div class="step-label">Type</div></div>
+    <div class="step-item"><div class="step-num">2</div><div class="step-label">Data</div></div>
+    <div class="step-item"><div class="step-num">3</div><div class="step-label">Details</div></div>
+    <div class="step-item"><div class="step-num">4</div><div class="step-label">Report</div></div>
+  </div>
+
+  <!-- ════ PROGRESS BAR ════ -->
+  <div class="progress-bar-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:5%"></div></div>
+  </div>
+
+  <!-- ════ SCREEN 1: INCOME TYPE ════ -->
+  <div class="card-body">
+    <div class="screen active" id="screen1">
+      <h2 style="font-size:17px;font-weight:800;color:var(--navy);margin-bottom:4px">What's your primary source of income?</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:4px">This helps us customise your tax analysis.</p>
+      <div class="type-grid">
+        <div class="type-card" onclick="selectType('salary', this)">
+          <span class="type-icon">💼</span>
+          <div class="type-name">Salaried</div>
+          <div class="type-desc">Form 16 based income</div>
+        </div>
+        <div class="type-card" onclick="selectType('business', this)">
+          <span class="type-icon">🏢</span>
+          <div class="type-name">Business</div>
+          <div class="type-desc">44AD / 44ADA income</div>
+        </div>
+        <div class="type-card" onclick="selectType('freelancer', this)">
+          <span class="type-icon">💻</span>
+          <div class="type-name">Freelancer</div>
+          <div class="type-desc">Professional income</div>
+        </div>
+        <div class="type-card" onclick="selectType('investor', this)">
+          <span class="type-icon">📈</span>
+          <div class="type-name">Investor</div>
+          <div class="type-desc">Capital gains / dividends</div>
+        </div>
+        <div class="type-card" onclick="selectType('rental', this)">
+          <span class="type-icon">🏠</span>
+          <div class="type-name">Rental</div>
+          <div class="type-desc">House property income</div>
+        </div>
+        <div class="type-card" onclick="selectType('multiple', this)">
+          <span class="type-icon">🔄</span>
+          <div class="type-name">Multiple</div>
+          <div class="type-desc">Mixed income sources</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ SCREEN 2: FORM 16 UPLOAD ════ -->
+    <div class="screen" id="screen2">
+      <h2 style="font-size:17px;font-weight:800;color:var(--navy);margin-bottom:4px">Upload your Form 16 (Part B)</h2>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">We'll extract your salary and deduction details automatically.</p>
+
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <span class="upload-icon">📄</span>
+        <div class="upload-title">Drop Form 16 here or tap to browse</div>
+        <div class="upload-hint">PDF (unprotected) · JPG · PNG · Up to 10MB</div>
+        <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" multiple style="display:none" onchange="handleFiles(this.files)">
+      </div>
+
+      <div class="upload-guidelines">
+        <strong>📋 Upload Guidelines:</strong><br>
+        • Upload <strong>unprotected PDF</strong> only — password-locked files cannot be processed<br>
+        • For photos: ensure <strong>clear, well-lit, full-page</strong> capture<br>
+        • Multiple Form 16s? Upload all — we'll combine them automatically<br>
+        • Review the extracted data carefully on the next screen
+      </div>
+
+      <div class="file-list" id="fileList"></div>
+
+      <div class="btn-row" id="uploadActions" style="display:none">
+        <button class="btn btn-primary" onclick="startParsing()" id="parseBtn">Extract Data →</button>
+        <button class="btn btn-outline" onclick="addMoreFiles()">+ Add Another Form 16</button>
+      </div>
+
+      <div style="margin-top:16px;text-align:center">
+        <a href="javascript:void(0)" onclick="skipUpload()" style="color:var(--muted);font-size:13px;font-weight:600">
+          Don't have Form 16? Enter details manually →
+        </a>
+      </div>
+    </div>
+
+    <!-- ════ SCREEN 3: CALCULATOR FORM ════ -->
+    <div class="screen" id="screen3">
+      <div id="feedbackBanner" style="display:none;padding:12px 16px;background:var(--green-light);border:2px solid var(--green);border-radius:12px;margin-bottom:20px;font-size:13px;color:#166534;font-weight:600;text-align:center">
+        ✅ Data extracted successfully! Please review all fields and proceed.
+      </div>
+
+      <!-- PAN -->
+      <div class="pan-field">
+        <label>PAN Number <span style="color:var(--red)">*</span></label>
+        <input type="text" id="panNumber" placeholder="ABCDE1234F" maxlength="10" pattern="[A-Z]{5}[0-9]{4}[A-Z]" style="margin-top:4px" oninput="this.value=this.value.toUpperCase()">
+        <div class="field-hint">Required for your report. Format: ABCDE1234F</div>
+      </div>
+
+      <!-- Section: Personal -->
+      <div class="calc-section">
+        <div class="calc-section-header" onclick="toggleSection(this)">
+          <span class="section-icon">👤</span> Personal Details
+          <span class="section-check">✓</span>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="calc-section-body">
+          <div class="form-group">
+            <label>Age Category</label>
+            <select id="ageCategory"><option value="regular">Below 60</option><option value="senior">60-80 (Senior)</option><option value="superSenior">80+ (Super Senior)</option></select>
+          </div>
+          <div class="form-group">
+            <label>Residential Status</label>
+            <select id="residentialStatus"><option value="ROR">Resident (ROR)</option><option value="RNOR">RNOR</option><option value="NR">Non-Resident</option></select>
+          </div>
+          <div class="form-group">
+            <label>City Type <span class="tooltip-wrap"><button class="info-btn" type="button">i</button><span class="tooltip-text">Metro cities: Delhi, Mumbai, Chennai, Kolkata. Affects HRA exemption calculation.</span></span></label>
+            <select id="cityType"><option value="metro">Metro (Delhi/Mum/Chn/Kol)</option><option value="non-metro">Non-Metro</option></select>
+          </div>
+          <div class="form-group">
+            <label>Employer Type</label>
+            <select id="employerType"><option value="private">Private</option><option value="government">Government</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Salary -->
+      <div class="calc-section">
+        <div class="calc-section-header" onclick="toggleSection(this)">
+          <span class="section-icon">💼</span> Salary Income
+          <span class="section-check">✓</span>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="calc-section-body">
+          <div class="form-group"><label>Basic Salary (Annual)</label><input type="number" id="basicSalary" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>DA (Dearness Allowance)</label><input type="number" id="da" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>HRA Received</label><input type="number" id="hra" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Rent Paid (Annual) <span class="tooltip-wrap"><button class="info-btn" type="button">i</button><span class="tooltip-text">Enter total rent paid during the year. Used to calculate HRA exemption under Old Regime.</span></span></label><input type="number" id="rentPaid" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>LTA (Leave Travel)</label><input type="number" id="lta" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Special Allowances</label><input type="number" id="specialAllowance" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Professional Tax</label><input type="number" id="profTax" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Employer NPS (80CCD2) <span class="tooltip-wrap"><button class="info-btn" type="button">i</button><span class="tooltip-text">Employer's contribution to NPS. Tax-free up to 14% of Basic+DA in both regimes.</span></span></label><input type="number" id="employerNPS" min="0" step="1" value="0"></div>
+        </div>
+      </div>
+
+      <!-- Section: Other Income -->
+      <div class="calc-section">
+        <div class="calc-section-header" onclick="toggleSection(this)">
+          <span class="section-icon">💰</span> Other Income
+          <span class="section-check">✓</span>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="calc-section-body">
+          <div class="form-group"><label>Interest Income (Savings + FD)</label><input type="number" id="interestIncome" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Other Income</label><input type="number" id="otherIncome" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Agricultural Income</label><input type="number" id="agriIncome" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Family Pension</label><input type="number" id="familyPension" min="0" step="1" value="0"></div>
+        </div>
+      </div>
+
+      <!-- Section: House Property -->
+      <div class="calc-section">
+        <div class="calc-section-header collapsed" onclick="toggleSection(this)">
+          <span class="section-icon">🏠</span> House Property
+          <span class="section-check">✓</span>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="calc-section-body collapsed">
+          <div class="form-group"><label>Self-Occupied Property?</label><select id="hasSOP"><option value="no">No</option><option value="yes">Yes</option></select></div>
+          <div class="form-group"><label>Home Loan Interest (SOP) <span class="tooltip-wrap"><button class="info-btn" type="button">i</button><span class="tooltip-text">Interest paid on home loan for self-occupied property. Max ₹2L deduction under Old Regime.</span></span></label><input type="number" id="homeLoanSOP" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Rental Income (Let-Out)</label><input type="number" id="letOutRent" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Municipal Tax Paid</label><input type="number" id="municipalTax" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Home Loan Interest (Let-Out)</label><input type="number" id="homeLoanLetOut" min="0" step="1" value="0"></div>
+        </div>
+      </div>
+
+      <!-- Section: Capital Gains -->
+      <div class="calc-section">
+        <div class="calc-section-header collapsed" onclick="toggleSection(this)">
+          <span class="section-icon">📈</span> Capital Gains
+          <span class="section-check">✓</span>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="calc-section-body collapsed">
+          <div class="form-group"><label>STCG — Equity/MF (111A) <span class="tooltip-wrap"><button class="info-btn" type="button">i</button><span class="tooltip-text">Short-term capital gains on equity shares and equity mutual funds. Taxed at flat 20%.</span></span></label><input type="number" id="stcgEquity" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>STCG — Other</label><input type="number" id="stcgOther" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>LTCG — Equity/MF (112A)</label><input type="number" id="ltcgEquity" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>LTCG — Other (112)</label><input type="number" id="ltcgOther" min="0" step="1" value="0"></div>
+        </div>
+      </div>
+
+      <!-- Section: Business -->
+      <div class="calc-section" id="businessSection">
+        <div class="calc-section-header collapsed" onclick="toggleSection(this)">
+          <span class="section-icon">🏢</span> Business / Professional Income
+          <span class="section-check">✓</span>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="calc-section-body collapsed">
+          <div class="form-group"><label>Business Type</label><select id="businessType"><option value="none">None</option><option value="44AD">44AD (Business)</option><option value="44ADA">44ADA (Professional)</option></select></div>
+          <div class="form-group"><label>Gross Turnover / Receipts</label><input type="number" id="businessTurnover" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Presumptive Rate (%)</label><select id="presumptiveRate"><option value="8">8%</option><option value="6">6% (Digital)</option><option value="50">50% (44ADA)</option><option value="custom">Custom</option></select></div>
+          <div class="form-group" id="customRateGroup" style="display:none"><label>Custom Rate (%)</label><input type="number" id="customRate" min="0" max="100" step="0.1" value="8"></div>
+        </div>
+      </div>
+
+      <!-- Section: Deductions -->
+      <div class="calc-section">
+        <div class="calc-section-header" onclick="toggleSection(this)">
+          <span class="section-icon">📋</span> Deductions (Old Regime)
+          <span class="section-check">✓</span>
+          <span class="toggle-arrow">▼</span>
+        </div>
+        <div class="calc-section-body">
+          <div class="form-group"><label>80C (PPF, ELSS, LIC, etc.) <span class="tooltip-wrap"><button class="info-btn" type="button">i</button><span class="tooltip-text">Max ₹1,50,000. Includes PPF, ELSS, LIC premium, EPF, tuition fees, home loan principal.</span></span></label><input type="number" id="sec80C" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>80CCD(1B) — NPS <span class="tooltip-wrap"><button class="info-btn" type="button">i</button><span class="tooltip-text">Additional NPS deduction up to ₹50,000 (over and above 80C limit).</span></span></label><input type="number" id="sec80CCD1B" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>80D — Health Insurance (Self)</label><input type="number" id="healthInsSelf" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>80D — Health Insurance (Parents)</label><input type="number" id="healthInsParents" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Self/Family — Senior Citizen?</label><select id="selfSenior80D"><option value="no">No</option><option value="yes">Yes</option></select></div>
+          <div class="form-group"><label>Parents — Senior Citizen?</label><select id="parentsSenior80D"><option value="no">No</option><option value="yes">Yes</option></select></div>
+          <div class="form-group"><label>Preventive Checkup (Self)</label><input type="number" id="preventiveSelf" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Preventive Checkup (Parents)</label><input type="number" id="preventiveParents" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>Medical Exp. — Senior (uninsured)</label><input type="number" id="medExpSenior" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>80E — Education Loan Interest</label><input type="number" id="sec80E" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>80G — Donations</label><input type="number" id="sec80G" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>80G Donation Type</label><select id="donationType"><option value="100">100% Deductible</option><option value="50">50% Deductible</option></select></div>
+          <div class="form-group"><label>80GG — Rent (No HRA) <span class="tooltip-wrap"><button class="info-btn" type="button">i</button><span class="tooltip-text">For individuals NOT receiving HRA from employer. Max ₹5,000/month.</span></span></label><input type="number" id="sec80GG" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>80TTA/TTB — Savings Interest</label><input type="number" id="sec80TTA" min="0" step="1" value="0"></div>
+          <div class="form-group"><label>80DD — Disabled Dependent</label><select id="sec80DD"><option value="0">None</option><option value="75000">₹75,000 (40-80%)</option><option value="125000">₹1,25,000 (80%+)</option></select></div>
+          <div class="form-group"><label>80U — Own Disability</label><select id="sec80U"><option value="0">None</option><option value="75000">₹75,000 (40-80%)</option><option value="125000">₹1,25,000 (80%+)</option></select></div>
+          <div class="form-group"><label>80DDB — Medical Treatment</label><input type="number" id="sec80DDB" min="0" step="1" value="0"></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-orange" onclick="runComputation()" style="width:100%;justify-content:center;font-size:16px">
+          Generate My Tax Report →
+        </button>
+      </div>
+    </div>
+
+    <!-- ════ SCREEN 4: PROCESSING ════ -->
+    <div class="screen" id="screen4">
+      <div class="processing-screen">
+        <div class="processing-spinner"></div>
+        <h2 style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:6px">Analysing your tax profile...</h2>
+        <p style="font-size:13px;color:var(--muted)">This takes just a moment.</p>
+        <div class="processing-steps">
+          <div class="p-step" id="pStep1"><span class="p-icon">⏳</span> Validating your inputs</div>
+          <div class="p-step" id="pStep2"><span class="p-icon">⏳</span> Computing Old vs New Regime</div>
+          <div class="p-step" id="pStep3"><span class="p-icon">⏳</span> Analysing deductions & exemptions</div>
+          <div class="p-step" id="pStep4"><span class="p-icon">⏳</span> Generating personalised insights</div>
+          <div class="p-step" id="pStep5"><span class="p-icon">⏳</span> Preparing your report</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ SCREEN 5: WHATSAPP GATE ════ -->
+    <div class="screen" id="screen5">
+      <div class="gate-screen">
+        <h2 class="gate-title">Your Tax Optimization Report is Ready!</h2>
+        <p class="gate-subtitle">We've analysed your complete tax profile.</p>
+
+        <!-- Blurred Report Preview -->
+        <div class="blurred-report-wrap">
+          <div class="blurred-report" id="blurredReport">
+            <!-- Realistic report content that gets blurred -->
+            <div class="report-header-mini">
+              <div style="font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:1px">Tax Optimization Report</div>
+              <div style="font-size:10px;color:var(--muted)">FY 2025-26 · AY 2026-27</div>
+            </div>
+            <div class="report-regime-table">
+              <div class="regime-col">
+                <div class="regime-label">Old Regime</div>
+                <div class="regime-tax" id="blurOldTax">₹1,04,520</div>
+              </div>
+              <div class="regime-vs">VS</div>
+              <div class="regime-col">
+                <div class="regime-label">New Regime</div>
+                <div class="regime-tax" id="blurNewTax">₹81,120</div>
+              </div>
+            </div>
+            <div class="report-verdict" id="blurVerdict">
+              ✅ New Regime saves you ₹23,400
+            </div>
+            <div class="report-findings-preview">
+              <div class="finding-row"><span class="f-dot risk"></span><span>Regime selection impact: ₹23,400</span></div>
+              <div class="finding-row"><span class="f-dot opp"></span><span>80C gap: ₹18,720 potential saving</span></div>
+              <div class="finding-row"><span class="f-dot opp"></span><span>NPS 80CCD(1B): ₹15,600 potential</span></div>
+              <div class="finding-row"><span class="f-dot good"></span><span>Standard deduction applied</span></div>
+            </div>
+          </div>
+          <!-- Frosted overlay with CTA -->
+          <div class="blur-overlay">
+            <div class="blur-overlay-content">
+              <div class="blur-lock">🔓</div>
+              <div class="blur-text">Unlock Your Complete Report</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-teaser" id="insightTeaser">
+          <div class="insight-count" id="insightCount">7 personalised insights found</div>
+          <div class="insight-badges" id="insightBadges">
+            <span class="insight-badge risk">⚠️ 2 risks</span>
+            <span class="insight-badge opportunity">💡 3 opportunities</span>
+            <span class="insight-badge good">✅ 2 healthy</span>
+          </div>
+        </div>
+
+        <div class="savings-teaser" id="savingsTeaser">💰 ₹41,360 in potential savings identified</div>
+
+        <a href="#" class="wa-cta" id="waCta" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Get My Report Now →
+        </a>
+        <div class="wa-cta-sub">📱 Receive your detailed report instantly on WhatsApp</div>
+
+        <div class="email-fallback">
+          — or —
+          <a onclick="showEmailForm()">Send to my email instead</a>
+          <div class="email-form" id="emailForm">
+            <input type="email" id="fallbackEmail" placeholder="your@email.com">
+            <button onclick="submitEmail()">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- card-body -->
+
+  <!-- ════ DATA EXTRACTION SUCCESS POPUP ════ -->
+  <div class="modal-overlay" id="extractModal">
+    <div class="modal-box">
+      <div class="modal-icon">✅</div>
+      <h3>Data Extracted Successfully!</h3>
+      <p>We've auto-filled your salary and deduction details from the uploaded document. Please review all fields carefully and make corrections if needed before generating your report.</p>
+      <button class="btn btn-primary" onclick="closeModal('extractModal')" style="width:100%">Review Data & Proceed →</button>
+    </div>
+  </div>
+
+</div><!-- app-container -->
+
+<script src="tax-engine.js"></script>
+<script src="insights-engine.js"></script>
+<script src="pdf-report.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
