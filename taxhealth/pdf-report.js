@@ -1,16 +1,14 @@
 /**
- * MakeEazy Tax Optimization Report — PDF Generator
- * Generates a branded 5-page PDF using jsPDF.
+ * MakeEazy Tax Optimization Report — PDF Generator v2
+ * Generates a branded 5-page PDF using jsPDF with actual MakeEazy logo.
  * Returns base64 string for storage/download.
  */
-
-/* global jspdf */
 
 function generateReportPDF(taxResult, insightResult, inputs, pan) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const W = 210, H = 297;
-    const M = 18; // margin
+    const M = 16; // margin
     const CW = W - M * 2; // content width
     const NAVY = [50, 80, 159];
     const ORANGE = [247, 127, 0];
@@ -20,390 +18,433 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
     const GRAY = [100, 116, 139];
     const DARK = [26, 45, 94];
     const WHITE = [255, 255, 255];
-    const LIGHT_BG = [240, 242, 247];
 
-    const fmtNum = n => '₹' + Math.round(n).toLocaleString('en-IN');
+    const f = n => {
+        const num = Math.round(Number(n) || 0);
+        return '\u20B9' + num.toLocaleString('en-IN');
+    };
     const rec = taxResult.recommendation;
     const bestLabel = rec === 'old' ? 'Old Regime' : rec === 'new' ? 'New Regime' : 'Either Regime';
+    const name = inputs.name || inputs.personalInfo?.name || 'Taxpayer';
     let y;
 
-    // ════════════ PAGE 1: COVER ════════════
-    // Background
-    doc.setFillColor(...NAVY);
-    doc.rect(0, 0, W, 85, 'F');
+    // Helper: add logo to page
+    function addLogo(xPos, yPos, w) {
+        try {
+            if (typeof MAKEEAZY_LOGO !== 'undefined') {
+                doc.addImage(MAKEEAZY_LOGO, 'PNG', xPos, yPos, w, w * 0.35);
+            }
+        } catch(e) { /* logo not loaded, skip */ }
+    }
 
-    // Accent bar
+    // Helper: page footer
+    function addFooter(pageNum) {
+        doc.setFontSize(7);
+        doc.setTextColor(...GRAY);
+        doc.text('www.makeeazy.in  |  +91-9992819995', M, H - 8);
+        doc.text('Page ' + pageNum + ' of 5', W - M, H - 8, { align: 'right' });
+        // Bottom accent line
+        doc.setDrawColor(...ORANGE);
+        doc.setLineWidth(1.5);
+        doc.line(0, H - 3, W, H - 3);
+    }
+
+    // Helper: section header bar
+    function sectionHeader(text) {
+        doc.setFillColor(...NAVY);
+        doc.rect(0, 0, W, 16, 'F');
+        doc.setFillColor(...ORANGE);
+        doc.rect(0, 16, W, 2, 'F');
+        addLogo(M, 3, 30);
+        doc.setTextColor(...WHITE);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(text, W - M, 11, { align: 'right' });
+    }
+
+    // ════════════ PAGE 1: COVER ════════════
+    // Navy header
+    doc.setFillColor(...NAVY);
+    doc.rect(0, 0, W, 90, 'F');
+    // Orange accent
     doc.setFillColor(...ORANGE);
-    doc.rect(0, 85, W, 4, 'F');
+    doc.rect(0, 90, W, 3, 'F');
+
+    // Logo
+    addLogo(W/2 - 25, 15, 50);
 
     // Title
     doc.setTextColor(...WHITE);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(28);
-    doc.text('Tax Optimization', W / 2, 35, { align: 'center' });
-    doc.text('Report', W / 2, 48, { align: 'center' });
-
-    doc.setFontSize(12);
+    doc.setFontSize(26);
+    doc.text('Tax Optimization Report', W / 2, 58, { align: 'center' });
+    doc.setFontSize(13);
     doc.setFont('helvetica', 'normal');
-    doc.text('FY 2025-26  ·  AY 2026-27', W / 2, 60, { align: 'center' });
+    doc.text('FY 2025-26  |  AY 2026-27', W / 2, 68, { align: 'center' });
 
-    // User details box
+    // Prepared for badge
+    doc.setFillColor(255, 255, 255, 40);
+    doc.setFontSize(9);
+    doc.text('Prepared exclusively for', W / 2, 80, { align: 'center' });
+
+    // Details card
+    y = 105;
     doc.setFillColor(248, 249, 252);
-    doc.roundedRect(M, 100, CW, 50, 4, 4, 'F');
-    doc.setDrawColor(200, 210, 230);
-    doc.roundedRect(M, 100, CW, 50, 4, 4, 'S');
+    doc.roundedRect(M, y, CW, 42, 3, 3, 'F');
+    doc.setDrawColor(220, 225, 235);
+    doc.roundedRect(M, y, CW, 42, 3, 3, 'S');
 
     doc.setTextColor(...DARK);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('TAXPAYER DETAILS', M + 8, 112);
-
+    doc.setFontSize(14);
+    doc.text(name, M + 10, y + 14);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setTextColor(...GRAY);
-    const name = inputs.name || inputs.personalInfo?.name || 'Taxpayer';
-    doc.text(`Name: ${name}`, M + 8, 122);
-    doc.text(`PAN: ${pan}`, M + 8, 130);
-    doc.text(`Income Type: ${inputs.incomeType || inputs._incomeType || 'Salaried'}`, M + 8, 138);
-    doc.text(`Assessment Year: 2026-27`, M + 8, 146);
+    doc.text('PAN: ' + pan, M + 10, y + 24);
+    const incType = inputs.incomeType || inputs._incomeType || 'Salaried';
+    doc.text('Income Source: ' + incType.charAt(0).toUpperCase() + incType.slice(1), M + 10, y + 32);
+    doc.text('Generated: ' + new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }), CW + M - 6, y + 14, { align: 'right' });
 
-    // Score card
+    // Tax Health Score
+    y = 160;
     const score = insightResult.score;
     const band = insightResult.band;
     const scoreColor = score > 80 ? GREEN : score > 60 ? AMBER : RED;
 
     doc.setFillColor(...scoreColor);
-    doc.roundedRect(M, 165, CW, 35, 4, 4, 'F');
+    doc.roundedRect(M, y, CW, 30, 3, 3, 'F');
     doc.setTextColor(...WHITE);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text(`Tax Health Score: ${score}/100`, W / 2, 180, { align: 'center' });
+    doc.setFontSize(18);
+    doc.text('Tax Health Score: ' + score + '/100', W / 2, y + 14, { align: 'center' });
     doc.setFontSize(11);
-    doc.text(`Status: ${band}`, W / 2, 190, { align: 'center' });
+    doc.text(band, W / 2, y + 24, { align: 'center' });
 
-    // Quick summary
-    y = 215;
+    // Quick overview
+    y = 205;
     doc.setTextColor(...DARK);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
-    doc.text('Quick Summary', M, y);
+    doc.text('Report Overview', M, y);
+    y += 3;
+    doc.setDrawColor(...ORANGE);
+    doc.setLineWidth(0.8);
+    doc.line(M, y, M + 35, y);
     y += 10;
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(...GRAY);
-    const summaryItems = [
-        `Old Regime Tax: ${fmtNum(taxResult.old.roundedTax)}`,
-        `New Regime Tax: ${fmtNum(taxResult.new.roundedTax)}`,
-        `Recommended: ${bestLabel}`,
-        `Potential Savings: ${fmtNum(taxResult.absSavings)}`,
-        `Insights Found: ${insightResult.counts.total}`,
-        `Opportunities: ${insightResult.counts.opportunity}`,
+    const overviewData = [
+        ['Old Regime Tax', f(taxResult.old.roundedTax)],
+        ['New Regime Tax', f(taxResult.new.roundedTax)],
+        ['Recommended Regime', bestLabel],
+        ['Regime Savings', f(taxResult.absSavings)],
+        ['Insights Found', String(insightResult.counts.total)],
+        ['Total Potential Savings', f(insightResult.totalPotentialSavings)],
     ];
-    for (const item of summaryItems) {
-        doc.text('•  ' + item, M + 4, y);
-        y += 7;
+    for (const [label, value] of overviewData) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(...GRAY);
+        doc.text(label, M + 6, y);
+        doc.setTextColor(...DARK);
+        doc.setFont('helvetica', 'bold');
+        doc.text(value, CW + M - 6, y, { align: 'right' });
+        y += 8;
     }
 
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(...GRAY);
-    doc.text('Generated by MakeEazy · makeeazy.in', W / 2, H - 12, { align: 'center' });
-    doc.text(`Report Date: ${new Date().toLocaleDateString('en-IN')}`, W / 2, H - 7, { align: 'center' });
+    addFooter(1);
 
     // ════════════ PAGE 2: REGIME COMPARISON ════════════
     doc.addPage();
-    y = M;
+    sectionHeader('Regime Comparison');
+    y = 26;
 
-    // Header bar
-    doc.setFillColor(...NAVY);
-    doc.rect(0, 0, W, 18, 'F');
-    doc.setTextColor(...WHITE);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Regime Comparison — Old vs New', W / 2, 12, { align: 'center' });
-    y = 28;
-
-    // Comparison table
     const colL = M;
-    const colR = W / 2 + 5;
-    const colW = CW / 2 - 5;
+    const colR = W / 2 + 3;
+    const colW = CW / 2 - 3;
 
     function drawRegimeBox(x, label, result, highlight) {
-        doc.setFillColor(highlight ? 240 : 248, highlight ? 248 : 249, highlight ? 255 : 252);
-        doc.roundedRect(x, y, colW, 115, 3, 3, 'F');
+        const boxY = y;
+        doc.setFillColor(highlight ? 245 : 250, highlight ? 248 : 250, highlight ? 255 : 252);
+        doc.roundedRect(x, boxY, colW, 120, 3, 3, 'F');
         if (highlight) {
             doc.setDrawColor(...NAVY);
-            doc.setLineWidth(0.8);
-            doc.roundedRect(x, y, colW, 115, 3, 3, 'S');
+            doc.setLineWidth(0.6);
+            doc.roundedRect(x, boxY, colW, 120, 3, 3, 'S');
+        } else {
+            doc.setDrawColor(220, 225, 235);
+            doc.roundedRect(x, boxY, colW, 120, 3, 3, 'S');
         }
 
-        let ly = y + 10;
+        let ly = boxY + 10;
         doc.setTextColor(...NAVY);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(13);
+        doc.setFontSize(12);
         doc.text(label, x + colW / 2, ly, { align: 'center' });
+        ly += 4;
+        doc.setDrawColor(...(highlight ? ORANGE : [220,225,235]));
+        doc.setLineWidth(0.5);
+        doc.line(x + 10, ly, x + colW - 10, ly);
+        ly += 10;
+
+        doc.setFontSize(20);
+        doc.setTextColor(...(highlight ? NAVY : GRAY));
+        doc.text(f(result.roundedTax), x + colW / 2, ly, { align: 'center' });
         ly += 12;
 
-        doc.setFontSize(22);
-        doc.setTextColor(...(highlight ? NAVY : GRAY));
-        doc.text(fmtNum(result.roundedTax), x + colW / 2, ly, { align: 'center' });
-        ly += 14;
-
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        doc.setTextColor(...GRAY);
-        const lines = [
-            ['Gross Salary', fmtNum(result.grossSalary)],
-            ['Std Deduction', fmtNum(result.stdDeduction)],
-            ['Net Income', fmtNum(result.normalIncome)],
-            ['Deductions', fmtNum(result.totalDeductions)],
-            ['Taxable', fmtNum(result.taxableTotal)],
-            ['Normal Tax', fmtNum(result.normalTax)],
-            ['Rebate 87A', fmtNum(result.rebate)],
-            ['Surcharge', fmtNum(result.netSurcharge)],
-            ['Cess 4%', fmtNum(result.cess)],
+        doc.setFontSize(8);
+        const rows = [
+            ['Gross Income', f(result.grossSalary || 0)],
+            ['Std Deduction', f(result.stdDeduction || 0)],
+            ['Net Income', f(result.normalIncome || 0)],
+            ['Ch. VI-A Deductions', f(result.totalDeductions || 0)],
+            ['Taxable Income', f(result.taxableTotal || 0)],
+            ['Tax on Income', f(result.normalTax || 0)],
+            ['Rebate u/s 87A', f(result.rebate || 0)],
+            ['Surcharge', f(result.netSurcharge || 0)],
+            ['Health & Edu Cess', f(result.cess || 0)],
         ];
-        for (const [k, v] of lines) {
+        for (const [k, v] of rows) {
+            doc.setTextColor(...GRAY);
             doc.text(k, x + 6, ly);
+            doc.setTextColor(...DARK);
             doc.text(v, x + colW - 6, ly, { align: 'right' });
-            ly += 7.5;
+            ly += 7;
         }
 
         if (highlight) {
             doc.setFillColor(...GREEN);
-            doc.roundedRect(x + 8, ly + 2, colW - 16, 8, 2, 2, 'F');
+            doc.roundedRect(x + 6, ly + 1, colW - 12, 7, 2, 2, 'F');
             doc.setTextColor(...WHITE);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
-            doc.text('✓ RECOMMENDED', x + colW / 2, ly + 7.5, { align: 'center' });
+            doc.setFontSize(7);
+            doc.text('RECOMMENDED', x + colW / 2, ly + 6, { align: 'center' });
         }
     }
 
     drawRegimeBox(colL, 'Old Regime', taxResult.old, rec === 'old');
     drawRegimeBox(colR, 'New Regime', taxResult.new, rec === 'new' || rec === 'same');
 
-    y += 125;
+    y += 130;
 
     // Verdict
-    doc.setFillColor(rec === 'same' ? 248 : 240, rec === 'same' ? 249 : 253, rec === 'same' ? 252 : 244);
-    doc.roundedRect(M, y, CW, 20, 3, 3, 'F');
-    doc.setTextColor(...(rec === 'same' ? GRAY : GREEN));
+    const verdictColor = rec === 'same' ? GRAY : GREEN;
+    doc.setFillColor(verdictColor[0], verdictColor[1], verdictColor[2], 15);
+    doc.roundedRect(M, y, CW, 18, 3, 3, 'F');
+    doc.setDrawColor(...verdictColor);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(M, y, CW, 18, 3, 3, 'S');
+    doc.setTextColor(...verdictColor);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     const verdictText = rec === 'same'
         ? 'Both regimes result in the same tax liability.'
-        : taxResult.regimeLabel;
-    doc.text(verdictText, W / 2, y + 12, { align: 'center' });
+        : taxResult.regimeLabel || (bestLabel + ' saves you ' + f(taxResult.absSavings));
+    doc.text(verdictText, W / 2, y + 11, { align: 'center' });
 
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(...GRAY);
-    doc.text('Page 2 of 5  ·  MakeEazy Tax Optimization Report', W / 2, H - 7, { align: 'center' });
+    addFooter(2);
 
     // ════════════ PAGE 3: INSIGHTS ════════════
     doc.addPage();
-    doc.setFillColor(...NAVY);
-    doc.rect(0, 0, W, 18, 'F');
-    doc.setTextColor(...WHITE);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Personalised Tax Insights', W / 2, 12, { align: 'center' });
-    y = 28;
+    sectionHeader('Tax Insights & Findings');
+    y = 26;
 
-    const typeLabels = { risk: '⚠ RISK', opportunity: '💡 OPPORTUNITY', good: '✓ GOOD' };
+    const typeBadge = { risk: 'RISK', opportunity: 'OPPORTUNITY', good: 'HEALTHY' };
     const typeColors = { risk: RED, opportunity: AMBER, good: GREEN };
     const typeBg = { risk: [254, 242, 242], opportunity: [255, 251, 235], good: [240, 253, 244] };
 
     for (const ins of insightResult.insights) {
-        if (y > H - 40) { doc.addPage(); y = M; }
+        if (y > H - 45) { doc.addPage(); sectionHeader('Tax Insights (cont.)'); y = 26; }
 
         const col = typeColors[ins.type] || GRAY;
-        const bg = typeBg[ins.type] || LIGHT_BG;
+        const bg = typeBg[ins.type] || [248, 249, 252];
+        const badge = typeBadge[ins.type] || 'INFO';
+        const hasImpact = ins.impact > 0;
+        const boxH = 26;
 
         doc.setFillColor(...bg);
-        const boxH = ins.impact > 0 ? 28 : 22;
-        doc.roundedRect(M, y, CW, boxH, 3, 3, 'F');
+        doc.roundedRect(M, y, CW, boxH, 2, 2, 'F');
 
-        // Type badge
+        // Badge
         doc.setFillColor(...col);
-        doc.roundedRect(M + 4, y + 3, 30, 6, 2, 2, 'F');
+        doc.roundedRect(M + 4, y + 3, 24, 5, 1.5, 1.5, 'F');
         doc.setTextColor(...WHITE);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6);
-        doc.text(typeLabels[ins.type] || 'INFO', M + 19, y + 7.5, { align: 'center' });
+        doc.setFontSize(5.5);
+        doc.text(badge, M + 16, y + 6.5, { align: 'center' });
 
         // Title
         doc.setTextColor(...DARK);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
-        doc.text(ins.title, M + 38, y + 8);
+        doc.text(ins.title, M + 32, y + 8);
 
-        // Detail
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(...GRAY);
-        const detailLines = doc.splitTextToSize(ins.detail, CW - 12);
-        doc.text(detailLines[0] || '', M + 4, y + 16);
-
-        // Impact
-        if (ins.impact > 0) {
+        // Impact badge on right
+        if (hasImpact) {
             doc.setTextColor(...col);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
-            doc.text(`Impact: ${fmtNum(ins.impact)}`, CW + M - 4, y + 8, { align: 'right' });
+            doc.text(f(ins.impact), CW + M - 4, y + 8, { align: 'right' });
         }
+
+        // Detail text
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...GRAY);
+        const detailLines = doc.splitTextToSize(ins.detail || '', CW - 14);
+        doc.text(detailLines.slice(0, 2).join(' '), M + 4, y + 17);
 
         y += boxH + 4;
     }
 
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(...GRAY);
-    doc.text('Page 3 of 5  ·  MakeEazy Tax Optimization Report', W / 2, H - 7, { align: 'center' });
+    addFooter(3);
 
     // ════════════ PAGE 4: RECOMMENDATIONS ════════════
     doc.addPage();
-    doc.setFillColor(...NAVY);
-    doc.rect(0, 0, W, 18, 'F');
-    doc.setTextColor(...WHITE);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Recommended Actions', W / 2, 12, { align: 'center' });
-    y = 28;
+    sectionHeader('Recommended Actions');
+    y = 26;
 
-    // Sort opportunities by impact descending
     const opportunities = insightResult.insights
         .filter(i => i.type === 'opportunity')
         .sort((a, b) => (b.impact || 0) - (a.impact || 0));
 
     if (opportunities.length === 0) {
+        y += 30;
         doc.setTextColor(...GREEN);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.text('Your tax profile looks well-optimised!', W / 2, y + 20, { align: 'center' });
+        doc.setFontSize(16);
+        doc.text('Your tax profile is well optimised!', W / 2, y, { align: 'center' });
+        y += 12;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
         doc.setTextColor(...GRAY);
-        doc.text('No major opportunities identified. Keep up the good work.', W / 2, y + 32, { align: 'center' });
+        doc.text('No major improvement areas identified. Keep it up.', W / 2, y, { align: 'center' });
     } else {
         let rank = 1;
-        for (const opp of opportunities.slice(0, 5)) {
-            doc.setFillColor(248, 249, 252);
-            doc.roundedRect(M, y, CW, 30, 3, 3, 'F');
+        for (const opp of opportunities.slice(0, 6)) {
+            if (y > H - 50) { doc.addPage(); sectionHeader('Recommendations (cont.)'); y = 26; }
 
-            // Rank circle
+            doc.setFillColor(248, 249, 252);
+            doc.roundedRect(M, y, CW, 28, 2, 2, 'F');
+
+            // Rank
             doc.setFillColor(...ORANGE);
-            doc.circle(M + 10, y + 12, 6, 'F');
+            doc.circle(M + 9, y + 11, 5, 'F');
             doc.setTextColor(...WHITE);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
-            doc.text(`${rank}`, M + 10, y + 14.5, { align: 'center' });
+            doc.setFontSize(10);
+            doc.text(String(rank), M + 9, y + 13.5, { align: 'center' });
 
-            // Title + impact
+            // Title
             doc.setTextColor(...DARK);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
-            doc.text(opp.title, M + 22, y + 10);
+            doc.setFontSize(10);
+            doc.text(opp.title, M + 20, y + 10);
 
+            // Detail
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
+            doc.setFontSize(7.5);
             doc.setTextColor(...GRAY);
-            const detailLines = doc.splitTextToSize(opp.detail, CW - 30);
-            doc.text(detailLines[0] || '', M + 22, y + 18);
+            const dl = doc.splitTextToSize(opp.detail || '', CW - 28);
+            doc.text(dl[0] || '', M + 20, y + 18);
 
+            // Save amount
             if (opp.impact > 0) {
                 doc.setTextColor(...GREEN);
                 doc.setFont('helvetica', 'bold');
-                doc.setFontSize(10);
-                doc.text(`Save ${fmtNum(opp.impact)}`, CW + M - 4, y + 10, { align: 'right' });
+                doc.setFontSize(9);
+                doc.text('Save ' + f(opp.impact), CW + M - 4, y + 10, { align: 'right' });
             }
 
-            y += 34;
+            y += 32;
             rank++;
         }
 
-        // Total savings
+        // Total savings bar
         if (insightResult.totalPotentialSavings > 0) {
-            y += 6;
+            y += 8;
             doc.setFillColor(...GREEN);
-            doc.roundedRect(M, y, CW, 18, 3, 3, 'F');
+            doc.roundedRect(M, y, CW, 16, 3, 3, 'F');
             doc.setTextColor(...WHITE);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(12);
-            doc.text(`Total Potential Savings: ${fmtNum(insightResult.totalPotentialSavings)}`, W / 2, y + 12, { align: 'center' });
+            doc.text('Total Potential Savings: ' + f(insightResult.totalPotentialSavings), W / 2, y + 11, { align: 'center' });
         }
     }
 
-    doc.setFontSize(8);
-    doc.setTextColor(...GRAY);
-    doc.text('Page 4 of 5  ·  MakeEazy Tax Optimization Report', W / 2, H - 7, { align: 'center' });
+    addFooter(4);
 
     // ════════════ PAGE 5: NEXT STEPS ════════════
     doc.addPage();
-    doc.setFillColor(...NAVY);
-    doc.rect(0, 0, W, 18, 'F');
-    doc.setTextColor(...WHITE);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Next Steps', W / 2, 12, { align: 'center' });
-    y = 35;
+    sectionHeader('Next Steps');
+    y = 30;
 
     doc.setTextColor(...DARK);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text('Want Expert Help With Your Filing?', W / 2, y, { align: 'center' });
-    y += 14;
+    doc.setFontSize(16);
+    doc.text('Need Help With Your Tax Filing?', W / 2, y, { align: 'center' });
+    y += 16;
 
-    // CTA boxes
     const ctas = [
-        { icon: '📅', title: 'Schedule a Tax Strategy Discussion', desc: 'Free 15-min call with our tax experts', link: 'calendly.com/makeeazy/support' },
-        { icon: '📱', title: 'Chat With Us on WhatsApp', desc: 'Quick answers to your tax questions', link: 'wa.me/919992819995' },
-        { icon: '📋', title: 'Get Your ITR Filed', desc: 'Accurate, compliant filing by CA-backed team', link: 'makeeazy.in' },
+        { title: 'Talk to a Tax Expert', desc: 'Free 15-minute consultation with our CA team to discuss your specific tax situation and filing strategy.', action: 'Book at calendly.com/makeeazy/support' },
+        { title: 'WhatsApp Us', desc: 'Quick answers to any tax questions. Our experts typically respond within minutes during business hours.', action: 'Message us at wa.me/919992819995' },
+        { title: 'Get Your ITR Filed', desc: 'Accurate, compliant ITR filing by our CA-backed team. We handle everything from documentation to submission.', action: 'Visit makeeazy.in' },
     ];
 
-    for (const cta of ctas) {
+    for (let i = 0; i < ctas.length; i++) {
         doc.setFillColor(248, 249, 252);
-        doc.roundedRect(M, y, CW, 28, 3, 3, 'F');
-        doc.setDrawColor(200, 210, 230);
-        doc.roundedRect(M, y, CW, 28, 3, 3, 'S');
+        doc.roundedRect(M, y, CW, 32, 3, 3, 'F');
+        doc.setDrawColor(220, 225, 235);
+        doc.roundedRect(M, y, CW, 32, 3, 3, 'S');
 
-        doc.setFontSize(18);
-        doc.text(cta.icon, M + 10, y + 16);
+        // Number
+        doc.setFillColor(...NAVY);
+        doc.circle(M + 10, y + 12, 5, 'F');
+        doc.setTextColor(...WHITE);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.text(String(i + 1), M + 10, y + 14.5, { align: 'center' });
 
+        // Title
         doc.setTextColor(...NAVY);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
-        doc.text(cta.title, M + 24, y + 10);
+        doc.text(ctas[i].title, M + 22, y + 10);
 
+        // Desc
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
+        doc.setFontSize(8);
         doc.setTextColor(...GRAY);
-        doc.text(cta.desc, M + 24, y + 18);
-        doc.text(cta.link, M + 24, y + 24);
+        const dl = doc.splitTextToSize(ctas[i].desc, CW - 28);
+        doc.text(dl.slice(0, 2).join(' '), M + 22, y + 18);
 
-        y += 34;
+        // Action
+        doc.setTextColor(...ORANGE);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text(ctas[i].action, M + 22, y + 28);
+
+        y += 38;
     }
 
     // Disclaimer
     y += 10;
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setTextColor(...GRAY);
+    doc.setFont('helvetica', 'normal');
     const disclaimer = [
-        'Disclaimer: This report is generated based on the information provided by you. It is for informational purposes only',
-        'and does not constitute tax advice. Please consult a qualified Chartered Accountant for personalised tax planning.',
-        'MakeEazy is not responsible for any decisions made based on this report. Tax laws are subject to change.',
+        'Disclaimer: This report is generated based on the information provided by you. It is for informational purposes only and does not constitute tax advice.',
+        'Please consult a qualified Chartered Accountant for personalised tax planning. Tax laws are subject to change. MakeEazy is not responsible for decisions',
+        'made based on this report. For professional assistance, visit www.makeeazy.in or call +91-9992819995.',
     ];
     for (const line of disclaimer) {
         doc.text(line, W / 2, y, { align: 'center' });
         y += 4;
     }
 
-    doc.setFontSize(8);
-    doc.setTextColor(...GRAY);
-    doc.text('Page 5 of 5  ·  MakeEazy Tax Optimization Report', W / 2, H - 7, { align: 'center' });
+    addFooter(5);
 
-    // ════════════ RETURN ════════════
     return doc;
 }
 
@@ -412,5 +453,5 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
  */
 function generateReportBase64(taxResult, insightResult, inputs, pan) {
     const doc = generateReportPDF(taxResult, insightResult, inputs, pan);
-    return doc.output('datauristring').split(',')[1]; // base64 only
+    return doc.output('datauristring').split(',')[1];
 }
