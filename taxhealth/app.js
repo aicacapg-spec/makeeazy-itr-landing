@@ -542,14 +542,14 @@ async function storeReport(pan, inputs, taxRes, insightRes) {
         navigator.sendBeacon(SHEETS_URL, dataBlob);
         console.log('[Sheets] Lead data sent for PAN:', pan);
 
-        // Step 2: Generate PDF and send via hidden form (reliable CORS bypass)
+        // Step 2: Generate PDF and send via XHR (reliable for Apps Script)
         try {
             const enrichedInputs = { ...inputs, _incomeType: selectedType, name: extractedData.personalInfo?.name || '' };
             const pdfBase64 = generateReportBase64(taxRes, insightRes, enrichedInputs, pan);
             console.log('[PDF] Generated, size:', Math.round(pdfBase64.length / 1024), 'KB');
 
-            // Use hidden iframe + form POST for large payloads
-            postViaForm(SHEETS_URL, {
+            // Send PDF via XHR — follows Apps Script redirect
+            const pdfPayload = JSON.stringify({
                 type: 'pdf_upload',
                 pan: pan,
                 name: extractedData.personalInfo?.name || '',
@@ -557,37 +557,17 @@ async function storeReport(pan, inputs, taxRes, insightRes) {
                 score: String(insightRes.score),
                 pdfBase64: pdfBase64
             });
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', SHEETS_URL, true);
+            xhr.setRequestHeader('Content-Type', 'text/plain;charset=UTF-8');
+            xhr.onload = () => console.log('[Sheets] PDF upload complete, status:', xhr.status);
+            xhr.onerror = () => console.warn('[Sheets] PDF upload network error (may still succeed)');
+            xhr.send(pdfPayload);
             console.log('[Sheets] PDF upload triggered for PAN:', pan);
         } catch (e) { console.error('[PDF] Generation/upload error:', e); }
 
     } catch (e) { console.error('[Sheets] Store error:', e); }
-}
-
-// Cross-origin POST via hidden iframe + form (works with Apps Script)
-function postViaForm(url, data) {
-    const iframe = document.createElement('iframe');
-    iframe.name = 'postFrame_' + Date.now();
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = url;
-    form.target = iframe.name;
-    form.style.display = 'none';
-
-    // Send as a single JSON field
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'payload';
-    input.value = JSON.stringify(data);
-    form.appendChild(input);
-
-    document.body.appendChild(form);
-    form.submit();
-
-    // Cleanup after 30s
-    setTimeout(() => { iframe.remove(); form.remove(); }, 30000);
 }
 
 // ── Email Fallback ──
