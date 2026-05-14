@@ -523,15 +523,8 @@ const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyNk4ylITfYLLAGvJalA
 async function storeReport(pan, inputs, taxRes, insightRes) {
     if (!SHEETS_URL) { console.log('[Sheets] URL not configured, skipping'); return; }
     try {
-        // Generate PDF base64
-        let pdfBase64 = '';
-        try {
-            const enrichedInputs = { ...inputs, _incomeType: selectedType, name: extractedData.personalInfo?.name || '' };
-            pdfBase64 = generateReportBase64(taxRes, insightRes, enrichedInputs, pan);
-            console.log('[PDF] Generated, size:', Math.round(pdfBase64.length / 1024), 'KB');
-        } catch (e) { console.error('[PDF] Generation error:', e); }
-
-        const payload = {
+        // Step 1: Store lead data (small payload — reliable via sendBeacon)
+        const dataPayload = {
             pan, name: extractedData.personalInfo?.name || '',
             mobile: '', email: '',
             incomeType: selectedType,
@@ -542,22 +535,36 @@ async function storeReport(pan, inputs, taxRes, insightRes) {
             regimeSavings: taxRes.absSavings,
             oldTax: taxRes.old.roundedTax,
             newTax: taxRes.new.roundedTax,
-            reportData: JSON.stringify({ inputs, taxResult: taxRes, insights: insightRes }),
-            pdfBase64: pdfBase64
+            reportData: JSON.stringify({ inputs, taxResult: taxRes, insights: insightRes })
         };
 
-        // Use sendBeacon with text/plain to avoid CORS preflight
-        const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain' });
-        const sent = navigator.sendBeacon(SHEETS_URL, blob);
-        if (!sent) {
-            // Fallback to fetch with text/plain (CORS safe)
+        const dataBlob = new Blob([JSON.stringify(dataPayload)], { type: 'text/plain' });
+        navigator.sendBeacon(SHEETS_URL, dataBlob);
+        console.log('[Sheets] Lead data sent for PAN:', pan);
+
+        // Step 2: Generate PDF and send separately (larger payload)
+        try {
+            const enrichedInputs = { ...inputs, _incomeType: selectedType, name: extractedData.personalInfo?.name || '' };
+            const pdfBase64 = generateReportBase64(taxRes, insightRes, enrichedInputs, pan);
+            console.log('[PDF] Generated, size:', Math.round(pdfBase64.length / 1024), 'KB');
+
+            // Send PDF via fetch (separate request)
+            const pdfPayload = {
+                type: 'pdf_upload',
+                pan: pan,
+                name: extractedData.personalInfo?.name || '',
+                regime: taxRes.recommendation,
+                score: insightRes.score,
+                pdfBase64: pdfBase64
+            };
             await fetch(SHEETS_URL, {
                 method: 'POST', mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(pdfPayload)
             });
-        }
-        console.log('[Sheets] Report stored for PAN:', pan);
+            console.log('[Sheets] PDF uploaded for PAN:', pan);
+        } catch (e) { console.error('[PDF] Generation/upload error:', e); }
+
     } catch (e) { console.error('[Sheets] Store error:', e); }
 }
 
