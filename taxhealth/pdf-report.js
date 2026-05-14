@@ -146,7 +146,7 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
         ly += 12;
 
         doc.setFontSize(22);
-        doc.setTextColor(highlight ? NAVY : GRAY);
+        doc.setTextColor(...(highlight ? NAVY : GRAY));
         doc.text(fmtNum(result.roundedTax), x + colW / 2, ly, { align: 'center' });
         ly += 14;
 

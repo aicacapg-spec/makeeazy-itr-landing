@@ -546,11 +546,11 @@ async function storeReport(pan, inputs, taxRes, insightRes) {
             pdfBase64: pdfBase64
         };
 
-        // Use navigator.sendBeacon for reliability with large payloads
-        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+        // Use sendBeacon with text/plain to avoid CORS preflight
+        const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain' });
         const sent = navigator.sendBeacon(SHEETS_URL, blob);
         if (!sent) {
-            // Fallback to fetch
+            // Fallback to fetch with text/plain (CORS safe)
             await fetch(SHEETS_URL, {
                 method: 'POST', mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain' },
