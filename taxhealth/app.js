@@ -270,60 +270,91 @@ async function parseWithText(text, docType) {
     const key = _dk();
     if (!key) { toast('Configuration error', 'error'); return null; }
 
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.1,
-            response_format: { type: 'json_object' }
-        })
-    });
-    if (!r.ok) throw new Error('Processing failed');
-    const data = await r.json();
-    const txt = data.choices?.[0]?.message?.content;
-    if (!txt) return null;
-    try { return JSON.parse(txt); } catch { const m = txt.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; }
+    console.log('[Parse] Text mode, length:', text.length);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    
+    try {
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.1,
+                response_format: { type: 'json_object' }
+            }),
+            signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (!r.ok) { console.error('[Parse] API error:', r.status); throw new Error('Processing failed (' + r.status + ')'); }
+        const data = await r.json();
+        const txt = data.choices?.[0]?.message?.content;
+        if (!txt) return null;
+        console.log('[Parse] Text result received');
+        try { return JSON.parse(txt); } catch { const m = txt.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; }
+    } catch (err) {
+        clearTimeout(timeout);
+        if (err.name === 'AbortError') { console.error('[Parse] Timeout after 30s'); toast('Processing timed out. Try manual entry.', 'error'); }
+        else { console.error('[Parse] Error:', err.message); }
+        return null;
+    }
 }
 
 async function parseWithVision(file, ext) {
     const key = _dk();
     if (!key) return null;
 
+    console.log('[Parse] Vision mode for:', file.name);
     let imageContents = [];
     if (ext === 'pdf') {
         const ab = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(ab) }).promise;
-        for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
+        const maxPages = Math.min(pdf.numPages, 3);
+        console.log('[Parse] Rendering', maxPages, 'pages');
+        for (let i = 1; i <= maxPages; i++) {
             const page = await pdf.getPage(i);
-            const vp = page.getViewport({ scale: 2.0 });
+            const vp = page.getViewport({ scale: 1.5 });
             const canvas = document.createElement('canvas');
             canvas.width = vp.width; canvas.height = vp.height;
             await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-            const b64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+            const b64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
             imageContents.push({ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${b64}` } });
+            console.log('[Parse] Page', i, 'rendered, b64 length:', b64.length);
         }
     } else {
         const b64 = await fileToBase64(file);
         imageContents.push({ type: 'image_url', image_url: { url: `data:${file.type || 'image/jpeg'};base64,${b64}` } });
     }
 
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({
-            model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-            messages: [{ role: 'user', content: [{ type: 'text', text: buildForm16Prompt() }, ...imageContents] }],
-            temperature: 0.1, max_tokens: 4096,
-            response_format: { type: 'json_object' }
-        })
-    });
-    if (!r.ok) throw new Error('Processing failed');
-    const data = await r.json();
-    const txt = data.choices?.[0]?.message?.content;
-    if (!txt) return null;
-    try { return JSON.parse(txt); } catch { const m = txt.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000);
+    
+    try {
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+            body: JSON.stringify({
+                model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+                messages: [{ role: 'user', content: [{ type: 'text', text: buildForm16Prompt() }, ...imageContents] }],
+                temperature: 0.1, max_tokens: 4096,
+                response_format: { type: 'json_object' }
+            }),
+            signal: controller.signal
+        });
+        clearTimeout(timeout);
+        if (!r.ok) { console.error('[Parse] Vision API error:', r.status); throw new Error('Processing failed (' + r.status + ')'); }
+        const data = await r.json();
+        const txt = data.choices?.[0]?.message?.content;
+        if (!txt) return null;
+        console.log('[Parse] Vision result received');
+        try { return JSON.parse(txt); } catch { const m = txt.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : null; }
+    } catch (err) {
+        clearTimeout(timeout);
+        if (err.name === 'AbortError') { console.error('[Parse] Vision timeout after 45s'); toast('Processing timed out. Try manual entry.', 'error'); }
+        else { console.error('[Parse] Vision error:', err.message); }
+        return null;
+    }
 }
 
 function fileToBase64(file) {
