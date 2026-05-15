@@ -262,7 +262,7 @@ async function extractPdfTextFromFile(file) {
 }
 
 // ── AI Parsing (Groq — no "AI" shown to user) ──
-const _gk = ['Z3NrX2xZR1', 'VqZUhVNjly', 'UXhXN0VVMW', 'JsYTJ3Z1dY', 'c3JncjhyeG', 'psOHhncjBs'];
+const _gk = ['Z3NrX1pNSF', 'Y5N1JOVTRR', 'QjBFVFZzWE', '1MV0dkeWIz', 'RlkxMU5SS1', 'BvYmxTZ2w3', 'Y2dCdEZQbV', 'FDVlE='];
 function _dk() { try { return atob(_gk.join('')); } catch(e) { return ''; } }
 
 async function parseWithText(text, docType) {
