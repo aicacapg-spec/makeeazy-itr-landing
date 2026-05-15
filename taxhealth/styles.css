@@ -300,6 +300,18 @@ body {
 .wa-cta svg { width: 26px; height: 26px; fill: currentColor; flex-shrink: 0; }
 .wa-cta-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
+/* Orange CTA button (lead gate) */
+.btn-orange {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, var(--orange) 0%, #e06b00 100%);
+  color: #fff; border: none; border-radius: 14px;
+  font-size: 17px; font-weight: 800; cursor: pointer; font-family: inherit;
+  transition: var(--transition); text-decoration: none;
+  box-shadow: 0 6px 24px rgba(247,127,0,.3);
+}
+.btn-orange:hover:not(:disabled) { background: linear-gradient(135deg, #e06b00 0%, #c55d00 100%); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(247,127,0,.4); }
+.btn-orange:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
 /* Email fallback */
 .email-fallback {
   margin-top: 20px; font-size: 13px; color: var(--muted);

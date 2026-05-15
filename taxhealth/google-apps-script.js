@@ -1,12 +1,12 @@
-// MakeEazy Tax Optimizer - Google Apps Script v5
+// MakeEazy Tax Optimizer - Google Apps Script v6
+// Clean backend: data capture + PDF upload from client
 // Run setup() first to initialize sheets and grant permissions
 
 // ====== RUN THIS FIRST ======
 function setup() {
-  // This function triggers all permission requests at once
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // Create TaxOptimizer sheet
+  // Create TaxOptimizer sheet with 29 columns
   var taxSheet = getOrCreateSheet('TaxOptimizer');
   Logger.log('TaxOptimizer sheet ready: ' + taxSheet.getName());
   
@@ -23,13 +23,6 @@ function setup() {
     Logger.log('Created reports folder: ' + folder.getUrl());
   }
   
-  // Test SpreadsheetApp.create (needed for PDF export)
-  var testSS = SpreadsheetApp.create('_MakeEazy_PermTest');
-  var testFile = DriveApp.getFileById(testSS.getId());
-  var testPdf = testFile.getAs('application/pdf');
-  testFile.setTrashed(true);
-  Logger.log('PDF export test: OK (' + testPdf.getBytes().length + ' bytes)');
-  
   Logger.log('Setup complete! All permissions granted. Now deploy as web app.');
 }
 
@@ -44,63 +37,19 @@ function doPost(e) {
       data = JSON.parse(e.postData.contents);
     }
     
-    // Handle email update
-    if (data.type === 'email_fallback') {
-      var s = getOrCreateSheet('TaxOptimizer');
-      updateEmailForPan(s, data.pan, data.email);
-      return jsonResponse({ type: 'email_updated' });
+    var action = data.action || 'storeData';
+    
+    if (action === 'submitLead') {
+      return handleLeadSubmission(data);
+    } else if (action === 'storeData') {
+      return handleDataStore(data);
     }
     
-    // Store lead data
-    var sheet = getOrCreateSheet('TaxOptimizer');
-    var row = [
-      new Date().toISOString(),
-      data.pan || '',
-      data.name || '',
-      data.mobile || '',
-      data.email || '',
-      data.incomeType || '',
-      data.score || 0,
-      data.band || '',
-      data.insightCount || 0,
-      data.totalSavings || 0,
-      data.regime || '',
-      data.regimeSavings || 0,
-      data.oldTax || 0,
-      data.newTax || 0,
-      data.reportData || '',
-      ''
-    ];
-    sheet.appendRow(row);
-    var dataRow = sheet.getLastRow();
-    
-    // Auto-generate PDF
-    var pdfUrl = '';
-    if (data.reportData) {
-      try {
-        var rd = JSON.parse(data.reportData);
-        pdfUrl = buildPdf(data.pan, data.name, data, rd);
-        sheet.getRange(dataRow, 16).setValue(pdfUrl);
-        
-        var repSheet = getOrCreateSheet('Reports');
-        repSheet.appendRow([
-          new Date().toISOString(),
-          data.name || '',
-          data.pan || '',
-          pdfUrl,
-          data.regime || '',
-          data.score || 0,
-          'Ready'
-        ]);
-      } catch (pdfErr) {
-        Logger.log('PDF error: ' + pdfErr.message);
-        sheet.getRange(dataRow, 16).setValue('Error: ' + pdfErr.message);
-      }
-    }
-    
-    return jsonResponse({ row: dataRow, pdfUrl: pdfUrl });
+    // Fallback: treat as data store
+    return handleDataStore(data);
     
   } catch (err) {
+    Logger.log('doPost error: ' + err.message);
     return jsonError(err.message);
   }
 }
@@ -110,361 +59,200 @@ function doGet(e) {
   var pan = (e.parameter || {}).pan;
   
   if (action === 'lookup' && pan) return lookupByPan(pan);
-  if (action === 'regenerate' && pan) return regeneratePdf(pan);
   
-  return jsonResponse({ message: 'MakeEazy Tax Optimizer API v5' });
+  return jsonResponse({ message: 'MakeEazy Tax Optimizer API v6' });
 }
 
-// ====== PDF GENERATION ======
+// ====== DATA STORE (initial — no lead contact yet) ======
 
-function buildPdf(pan, name, summary, reportData) {
-  var tax = reportData.taxResult || {};
-  var ins = reportData.insights || {};
-  var inputs = reportData.inputs || {};
-  var oldTax = tax.old || {};
-  var newTax = tax.new || {};
-  var rec = tax.recommendation || 'new';
-  var score = Number(ins.score || summary.score || 0);
-  var band = ins.band || summary.band || '';
-  var insights = ins.insights || [];
-  var bestLabel = (rec === 'old') ? 'Old Regime' : 'New Regime';
+function handleDataStore(data) {
+  var sheet = getOrCreateSheet('TaxOptimizer');
+  var row = buildRow(data);
+  sheet.appendRow(row);
+  var rowNum = sheet.getLastRow();
+  Logger.log('Data stored: row ' + rowNum + ', PAN: ' + (data.pan || 'N/A'));
+  return jsonResponse({ row: rowNum, status: 'stored' });
+}
+
+// ====== LEAD SUBMISSION (with WhatsApp + Email + PDF) ======
+
+function handleLeadSubmission(data) {
+  var sheet = getOrCreateSheet('TaxOptimizer');
   
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var ts = ss.insertSheet('_PDF_' + Date.now());
+  // Try to find existing row by PAN and update it
+  var existingRow = findRowByPan(sheet, data.pan);
   
-  try {
-    ts.setColumnWidth(1, 25);
-    ts.setColumnWidth(2, 200);
-    ts.setColumnWidth(3, 150);
-    ts.setColumnWidth(4, 150);
-    ts.setColumnWidth(5, 25);
-    
-    var r = 1;
-    
-    // Colors
-    var NV = '#32509F';
-    var OR = '#F77F00';
-    var GR = '#16a34a';
-    var RD = '#dc2626';
-    var GY = '#64748b';
-    var WH = '#FFFFFF';
-    var LT = '#F0F4FF';
-    
-    // Header
-    ts.getRange(r, 1, 1, 5).merge().setValue('MAKEEAZY').setBackground(NV)
-      .setFontColor(WH).setFontSize(22).setFontWeight('bold').setHorizontalAlignment('center');
-    ts.setRowHeight(r, 45);
-    r = r + 1;
-    
-    ts.getRange(r, 1, 1, 5).merge().setValue('Tax Optimization Report').setBackground(NV)
-      .setFontColor(OR).setFontSize(14).setFontWeight('bold').setHorizontalAlignment('center');
-    r = r + 1;
-    
-    ts.getRange(r, 1, 1, 5).merge().setValue('FY 2025-26  |  AY 2026-27').setBackground(NV)
-      .setFontColor('#94A3B8').setFontSize(9).setHorizontalAlignment('center');
-    r = r + 2;
-    
-    // User info
-    var info = [
-      ['Taxpayer', name || 'Not provided'],
-      ['PAN', pan],
-      ['Income Source', inputs._incomeType || inputs.incomeType || 'Salaried'],
-      ['Report Date', Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM yyyy')]
-    ];
-    for (var i = 0; i < info.length; i++) {
-      ts.getRange(r, 2).setValue(info[i][0]).setFontColor(GY).setFontSize(9);
-      ts.getRange(r, 3, 1, 2).merge().setValue(info[i][1]).setFontColor(NV).setFontSize(10).setFontWeight('bold');
-      r = r + 1;
+  var pdfUrl = '';
+  
+  // Save PDF to Drive if provided
+  if (data.pdfBase64) {
+    try {
+      pdfUrl = savePdfToDrive(data.pan, data.name, data.pdfBase64);
+      Logger.log('PDF saved: ' + pdfUrl);
+    } catch (pdfErr) {
+      Logger.log('PDF save error: ' + pdfErr.message);
+      pdfUrl = 'Error: ' + pdfErr.message;
     }
-    r = r + 1;
-    
-    // Score bar
-    var sc = score > 80 ? GR : (score > 60 ? OR : RD);
-    ts.getRange(r, 2, 1, 3).merge()
-      .setValue('TAX HEALTH SCORE:  ' + score + '/100  -  ' + band)
-      .setFontSize(14).setFontWeight('bold').setFontColor(WH).setBackground(sc)
-      .setHorizontalAlignment('center');
-    ts.setRowHeight(r, 35);
-    r = r + 2;
-    
-    // Regime comparison header
-    ts.getRange(r, 2, 1, 3).merge().setValue('Regime Comparison')
-      .setFontSize(13).setFontWeight('bold').setFontColor(NV);
-    r = r + 1;
-    
-    // Table header
-    ts.getRange(r, 2).setValue('').setBackground(NV).setFontColor(WH).setFontWeight('bold').setFontSize(9);
-    ts.getRange(r, 3).setValue('Old Regime').setBackground(NV).setFontColor(WH).setFontWeight('bold').setFontSize(9).setHorizontalAlignment('right');
-    ts.getRange(r, 4).setValue('New Regime').setBackground(NV).setFontColor(WH).setFontWeight('bold').setFontSize(9).setHorizontalAlignment('right');
-    r = r + 1;
-    
-    // Table rows
-    var trows = [
-      ['Gross Income', fmtNum(oldTax.grossSalary), fmtNum(newTax.grossSalary)],
-      ['Standard Deduction', fmtNum(oldTax.stdDeduction), fmtNum(newTax.stdDeduction)],
-      ['Net Income', fmtNum(oldTax.normalIncome), fmtNum(newTax.normalIncome)],
-      ['Deductions (Ch VI-A)', fmtNum(oldTax.totalDeductions), fmtNum(newTax.totalDeductions)],
-      ['Taxable Income', fmtNum(oldTax.taxableTotal), fmtNum(newTax.taxableTotal)],
-      ['Tax on Income', fmtNum(oldTax.normalTax), fmtNum(newTax.normalTax)],
-      ['Rebate u/s 87A', fmtNum(oldTax.rebate), fmtNum(newTax.rebate)],
-      ['Health and Edu Cess', fmtNum(oldTax.cess), fmtNum(newTax.cess)],
-      ['TOTAL TAX', fmtNum(oldTax.roundedTax), fmtNum(newTax.roundedTax)]
-    ];
-    
-    for (var i = 0; i < trows.length; i++) {
-      var bg = (i % 2 === 0) ? WH : LT;
-      var fw = (i === trows.length - 1) ? 'bold' : 'normal';
-      ts.getRange(r, 2).setValue(trows[i][0]).setFontSize(9).setFontColor(NV).setBackground(bg).setFontWeight(fw);
-      var oldBg = (rec === 'old') ? '#F0FDF4' : bg;
-      var newBg = (rec === 'new') ? '#F0FDF4' : bg;
-      ts.getRange(r, 3).setValue(trows[i][1]).setFontSize(9).setFontColor(NV).setBackground(oldBg).setFontWeight(fw).setHorizontalAlignment('right');
-      ts.getRange(r, 4).setValue(trows[i][2]).setFontSize(9).setFontColor(NV).setBackground(newBg).setFontWeight(fw).setHorizontalAlignment('right');
-      r = r + 1;
-    }
-    r = r + 1;
-    
-    // Savings bar
-    ts.getRange(r, 2, 1, 3).merge()
-      .setValue(bestLabel + ' saves you ' + fmtNum(tax.absSavings))
-      .setFontSize(13).setFontWeight('bold').setFontColor(WH).setBackground(GR)
-      .setHorizontalAlignment('center');
-    ts.setRowHeight(r, 32);
-    r = r + 2;
-    
-    // Insights
-    if (insights.length > 0) {
-      ts.getRange(r, 2, 1, 3).merge().setValue('Tax Insights')
-        .setFontSize(13).setFontWeight('bold').setFontColor(NV);
-      r = r + 1;
-      
-      for (var i = 0; i < insights.length; i++) {
-        var insight = insights[i];
-        var tl = 'INFO';
-        var tc = GY;
-        if (insight.type === 'risk') { tl = 'RISK'; tc = RD; }
-        if (insight.type === 'opportunity') { tl = 'OPPORTUNITY'; tc = OR; }
-        if (insight.type === 'good') { tl = 'HEALTHY'; tc = GR; }
-        
-        var impactStr = (insight.impact > 0) ? ('  -  Impact: ' + fmtNum(insight.impact)) : '';
-        ts.getRange(r, 2, 1, 3).merge()
-          .setValue('[' + tl + '] ' + insight.title + impactStr)
-          .setFontSize(10).setFontWeight('bold').setFontColor(tc);
-        r = r + 1;
-        
-        if (insight.detail) {
-          ts.getRange(r, 2, 1, 3).merge()
-            .setValue('    ' + insight.detail)
-            .setFontSize(8).setFontColor(GY).setWrap(true);
-          r = r + 1;
-        }
-        r = r + 1;
-      }
-      
-      if (ins.totalPotentialSavings > 0) {
-        ts.getRange(r, 2, 1, 3).merge()
-          .setValue('Total Potential Savings: ' + fmtNum(ins.totalPotentialSavings))
-          .setFontSize(12).setFontWeight('bold').setFontColor(GR).setHorizontalAlignment('center');
-        r = r + 1;
-      }
-      r = r + 1;
-    }
-    
-    // Next steps
-    ts.getRange(r, 2, 1, 3).merge().setValue('Next Steps')
-      .setFontSize(13).setFontWeight('bold').setFontColor(NV);
-    r = r + 1;
-    
-    var steps = [
-      '1. Talk to a Tax Expert - Free 15-min consultation',
-      '2. WhatsApp Us - wa.me/919992819995',
-      '3. Get Your ITR Filed - CA-backed filing at makeeazy.in'
-    ];
-    for (var s = 0; s < steps.length; s++) {
-      ts.getRange(r, 2, 1, 3).merge().setValue(steps[s]).setFontSize(9).setFontColor(NV);
-      r = r + 1;
-    }
-    r = r + 1;
-    
-    // Footer
-    ts.getRange(r, 2, 1, 3).merge()
-      .setValue('Disclaimer: For informational purposes only. Consult a qualified CA.')
-      .setFontSize(7).setFontColor(GY).setHorizontalAlignment('center');
-    r = r + 1;
-    ts.getRange(r, 2, 1, 3).merge()
-      .setValue('Generated by MakeEazy  |  www.makeeazy.in  |  +91-9992819995')
-      .setFontSize(8).setFontColor(NV).setFontWeight('bold').setHorizontalAlignment('center');
-    
-    // Export as PDF
-    SpreadsheetApp.flush();
-    
-    var tempSS = SpreadsheetApp.create('_TempReport_' + pan);
-    var copied = ts.copyTo(tempSS);
-    var sheets = tempSS.getSheets();
-    for (var i = 0; i < sheets.length; i++) {
-      if (sheets[i].getName() !== copied.getName()) {
-        tempSS.deleteSheet(sheets[i]);
-      }
-    }
-    
-    var tempFile = DriveApp.getFileById(tempSS.getId());
-    var pdfBlob = tempFile.getAs('application/pdf');
-    pdfBlob.setName('TaxReport_' + pan + '_' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd_HHmm') + '.pdf');
-    
-    var folder = getReportsFolder();
-    var pdfFile = folder.createFile(pdfBlob);
-    pdfFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    
-    tempFile.setTrashed(true);
-    
-    return pdfFile.getUrl();
-    
-  } finally {
-    ss.deleteSheet(ts);
   }
+  
+  // Build the full row with lead data + PDF URL
+  var row = buildRow(data);
+  row[23] = pdfUrl; // Column 24: PDF Report URL (0-indexed = 23)
+  
+  if (existingRow > 0) {
+    // Update existing row
+    sheet.getRange(existingRow, 1, 1, row.length).setValues([row]);
+    Logger.log('Updated row ' + existingRow + ' with lead data');
+  } else {
+    // Append new row
+    sheet.appendRow(row);
+    existingRow = sheet.getLastRow();
+    Logger.log('New lead row: ' + existingRow);
+  }
+  
+  // Also log to Reports sheet
+  if (pdfUrl && !pdfUrl.startsWith('Error')) {
+    var repSheet = getOrCreateSheet('Reports');
+    repSheet.appendRow([
+      new Date().toISOString(),
+      data.name || '',
+      data.pan || '',
+      data.mobile || '',
+      data.email || '',
+      pdfUrl,
+      data.regime || '',
+      data.score || 0,
+      'Delivered'
+    ]);
+  }
+  
+  return jsonResponse({ row: existingRow, pdfUrl: pdfUrl, status: 'lead_captured' });
+}
+
+// ====== BUILD ROW (29 columns) ======
+
+function buildRow(data) {
+  return [
+    new Date().toISOString(),                                    // 1. Timestamp
+    data.pan || '',                                               // 2. PAN
+    data.name || '',                                              // 3. Full Name
+    data.mobile || '',                                            // 4. WhatsApp Number
+    data.email || '',                                             // 5. Email
+    data.incomeType || '',                                        // 6. Income Type
+    Number(data.grossIncome) || 0,                                // 7. Gross Income
+    Number(data.basicSalary) || 0,                                // 8. Basic Salary
+    Number(data.hra) || 0,                                        // 9. HRA
+    Number(data.specialAllowance) || 0,                           // 10. Special Allowance
+    Number(data.sec80C) || 0,                                     // 11. 80C Deductions
+    Number(data.healthIns) || 0,                                  // 12. Health Insurance
+    Number(data.homeLoan) || 0,                                   // 13. Home Loan Interest
+    data.otherInputs || '',                                       // 14. Other Inputs JSON
+    Number(data.score) || 0,                                      // 15. Tax Health Score
+    data.band || '',                                              // 16. Score Band
+    data.regime || '',                                            // 17. Recommended Regime
+    Number(data.oldTax) || 0,                                     // 18. Old Regime Tax
+    Number(data.newTax) || 0,                                     // 19. New Regime Tax
+    Number(data.regimeSavings) || 0,                              // 20. Regime Savings
+    Number(data.insightCount) || 0,                               // 21. Insight Count
+    Number(data.totalSavings) || 0,                               // 22. Total Potential Savings
+    data.reportData || '',                                        // 23. Report Data JSON
+    '',                                                           // 24. PDF Report URL (filled later for leads)
+    data.utmSource || '',                                         // 25. UTM Source
+    data.utmMedium || '',                                         // 26. UTM Medium
+    data.utmCampaign || '',                                       // 27. UTM Campaign
+    data.device || '',                                            // 28. Device
+    data.referrer || ''                                            // 29. Referrer
+  ];
+}
+
+// ====== PDF SAVE TO DRIVE ======
+
+function savePdfToDrive(pan, name, base64Data) {
+  var folders = DriveApp.getFoldersByName('MakeEazy Tax Reports');
+  var folder;
+  if (folders.hasNext()) {
+    folder = folders.next();
+  } else {
+    folder = DriveApp.createFolder('MakeEazy Tax Reports');
+  }
+  
+  var ts = Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyyMMdd_HHmmss');
+  var fileName = 'TaxReport_' + (pan || 'UNKNOWN') + '_' + ts + '.pdf';
+  
+  var decoded = Utilities.base64Decode(base64Data);
+  var blob = Utilities.newBlob(decoded, 'application/pdf', fileName);
+  var file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  
+  return file.getUrl();
 }
 
 // ====== HELPERS ======
 
-function fmtNum(n) {
-  var num = Math.round(Number(n) || 0);
-  return 'Rs.' + num.toLocaleString('en-IN');
-}
-
-function getReportsFolder() {
-  var folders = DriveApp.getFoldersByName('MakeEazy Tax Reports');
-  if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder('MakeEazy Tax Reports');
-}
-
-function regeneratePdf(pan) {
-  var sheet = getOrCreateSheet('TaxOptimizer');
+function findRowByPan(sheet, pan) {
+  if (!pan) return -1;
   var data = sheet.getDataRange().getValues();
-  
   for (var i = data.length - 1; i >= 1; i--) {
-    if (data[i][1] === pan) {
-      var rdStr = data[i][14];
-      if (!rdStr) return jsonError('No report data for PAN: ' + pan);
-      
-      var rd = JSON.parse(rdStr);
-      var pdfUrl = buildPdf(pan, data[i][2], {
-        score: data[i][6], band: data[i][7], regime: data[i][10]
-      }, rd);
-      
-      sheet.getRange(i + 1, 16).setValue(pdfUrl);
-      
-      var repSheet = getOrCreateSheet('Reports');
-      repSheet.appendRow([
-        new Date().toISOString(), data[i][2] || '', pan, pdfUrl,
-        data[i][10] || '', data[i][6] || 0, 'Ready'
-      ]);
-      
-      return jsonResponse({ status: 'regenerated', pdfUrl: pdfUrl });
+    if (String(data[i][1]).toUpperCase() === pan.toUpperCase()) {
+      return i + 1; // 1-indexed
     }
   }
-  return jsonError('PAN not found: ' + pan);
+  return -1;
+}
+
+function getOrCreateSheet(name) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    if (name === 'TaxOptimizer') {
+      sheet.appendRow([
+        'Timestamp', 'PAN', 'Full Name', 'WhatsApp', 'Email',
+        'Income Type', 'Gross Income', 'Basic Salary', 'HRA', 'Special Allowance',
+        '80C Deductions', 'Health Insurance', 'Home Loan Interest', 'Other Inputs JSON',
+        'Tax Health Score', 'Score Band', 'Recommended Regime',
+        'Old Regime Tax', 'New Regime Tax', 'Regime Savings',
+        'Insight Count', 'Total Potential Savings', 'Report Data JSON',
+        'PDF Report URL',
+        'UTM Source', 'UTM Medium', 'UTM Campaign', 'Device', 'Referrer'
+      ]);
+      sheet.getRange(1, 1, 1, 29).setFontWeight('bold').setBackground('#32509F').setFontColor('#FFFFFF');
+      sheet.setFrozenRows(1);
+    } else if (name === 'Reports') {
+      sheet.appendRow([
+        'Timestamp', 'Name', 'PAN', 'WhatsApp', 'Email', 'PDF URL', 'Regime', 'Score', 'Status'
+      ]);
+      sheet.getRange(1, 1, 1, 9).setFontWeight('bold').setBackground('#32509F').setFontColor('#FFFFFF');
+      sheet.setFrozenRows(1);
+    }
+  }
+  return sheet;
 }
 
 function lookupByPan(pan) {
   var sheet = getOrCreateSheet('TaxOptimizer');
   var data = sheet.getDataRange().getValues();
-  
   for (var i = data.length - 1; i >= 1; i--) {
-    if (data[i][1] === pan) {
-      var pdfUrl = '';
-      if (data[i][15]) {
-        pdfUrl = data[i][15].toString();
-      }
-      if (!pdfUrl || pdfUrl.indexOf('http') !== 0) {
-        try {
-          var rep = getOrCreateSheet('Reports');
-          var rd = rep.getDataRange().getValues();
-          for (var j = rd.length - 1; j >= 1; j--) {
-            if (rd[j][2] === pan) { pdfUrl = rd[j][3]; break; }
-          }
-        } catch(ex) {}
-      }
-      
-      var reportData = null;
-      if (data[i][14]) {
-        try { reportData = JSON.parse(data[i][14]); } catch(ex) {}
-      }
-      
+    if (String(data[i][1]).toUpperCase() === pan.toUpperCase()) {
       return jsonResponse({
-        status: 'found', row: i + 1,
-        pan: data[i][1], name: data[i][2],
-        score: data[i][6], band: data[i][7],
-        regime: data[i][10], pdfUrl: pdfUrl,
-        reportData: reportData
+        found: true,
+        row: i + 1,
+        pan: data[i][1],
+        name: data[i][2],
+        score: data[i][14],
+        pdfUrl: data[i][23]
       });
     }
   }
-  
-  return jsonResponse({ status: 'not_found' });
+  return jsonResponse({ found: false });
 }
-
-function updateEmailForPan(sheet, pan, email) {
-  var data = sheet.getDataRange().getValues();
-  for (var i = data.length - 1; i >= 1; i--) {
-    if (data[i][1] === pan) {
-      sheet.getRange(i + 1, 5).setValue(email);
-      return;
-    }
-  }
-}
-
-// ====== SHEET MANAGEMENT ======
-
-function getOrCreateSheet(name) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(name);
-  
-  if (!sheet) {
-    sheet = ss.insertSheet(name);
-    
-    if (name === 'TaxOptimizer') {
-      var h = [
-        'Timestamp', 'PAN', 'Name', 'Mobile', 'Email',
-        'Income Type', 'Tax Health Score', 'Score Band',
-        'Insight Count', 'Total Savings', 'Recommended Regime',
-        'Regime Savings', 'Old Regime Tax', 'New Regime Tax',
-        'Report Data (JSON)', 'PDF Report URL'
-      ];
-      sheet.getRange(1, 1, 1, h.length).setValues([h]);
-      var hr = sheet.getRange(1, 1, 1, h.length);
-      hr.setFontWeight('bold');
-      hr.setBackground('#32509F');
-      hr.setFontColor('#FFFFFF');
-      sheet.setFrozenRows(1);
-      sheet.setColumnWidth(16, 300);
-    }
-    
-    if (name === 'Reports') {
-      var h = [
-        'Timestamp', 'Name', 'PAN', 'PDF Report Link',
-        'Regime', 'Score', 'Status'
-      ];
-      sheet.getRange(1, 1, 1, h.length).setValues([h]);
-      var hr = sheet.getRange(1, 1, 1, h.length);
-      hr.setFontWeight('bold');
-      hr.setBackground('#32509F');
-      hr.setFontColor('#FFFFFF');
-      sheet.setFrozenRows(1);
-      sheet.setColumnWidth(4, 350);
-    }
-  }
-  
-  return sheet;
-}
-
-// ====== RESPONSE HELPERS ======
 
 function jsonResponse(obj) {
-  obj.status = obj.status || 'ok';
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
 function jsonError(msg) {
-  return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: msg }))
+  return ContentService.createTextOutput(JSON.stringify({ error: msg }))
     .setMimeType(ContentService.MimeType.JSON);
 }

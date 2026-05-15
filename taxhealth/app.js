@@ -229,6 +229,7 @@ function fillFormFromExtracted() {
     const d = extractedData;
     const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
 
+    if (d.personalInfo.name) set('fullName', d.personalInfo.name);
     if (d.personalInfo.pan) set('panNumber', d.personalInfo.pan);
     set('basicSalary', d.salary.basic || d.salary.grossSalary);
     set('da', d.salary.da);
@@ -453,6 +454,14 @@ function collectFormInputs() {
 }
 
 async function runComputation() {
+    // Validate Name
+    const fullName = (document.getElementById('fullName').value || '').trim();
+    if (!fullName || fullName.length < 2) {
+        toast('Please enter your full name', 'error');
+        document.getElementById('fullName').focus();
+        return;
+    }
+
     // Validate PAN
     const pan = document.getElementById('panNumber').value.trim().toUpperCase();
     if (!pan || !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan)) {
@@ -465,6 +474,8 @@ async function runComputation() {
 
     const inputs = collectFormInputs();
     inputs.pan = pan;
+    inputs.name = fullName;
+    inputs.incomeType = selectedType;
 
     // Animated steps
     const steps = ['pStep1', 'pStep2', 'pStep3', 'pStep4', 'pStep5'];
@@ -492,7 +503,7 @@ async function runComputation() {
     last.classList.remove('active'); last.classList.add('done');
     last.querySelector('.p-icon').textContent = '✅';
 
-    // Store to Google Sheets
+    // Store initial data to Google Sheets (without lead contact yet)
     storeReport(pan, inputs, taxResult, insightResult);
 
     await delay(400);
@@ -504,31 +515,27 @@ async function runComputation() {
 
 function updateGateScreen(pan) {
     if (!insightResult || !taxResult) return;
+    const f = n => 'Rs. ' + Math.round(Number(n) || 0).toLocaleString('en-IN');
 
-    // Populate blurred report with REAL data
     const blurOld = document.getElementById('blurOldTax');
     const blurNew = document.getElementById('blurNewTax');
     const blurVerdict = document.getElementById('blurVerdict');
-    if (blurOld) blurOld.textContent = fmt(taxResult.old.roundedTax);
-    if (blurNew) blurNew.textContent = fmt(taxResult.new.roundedTax);
+    if (blurOld) blurOld.textContent = f(taxResult.old.roundedTax);
+    if (blurNew) blurNew.textContent = f(taxResult.new.roundedTax);
     if (blurVerdict) blurVerdict.textContent = (taxResult.recommendation === 'same')
-        ? '⚖️ Both regimes result in equal tax'
-        : '✅ ' + taxResult.regimeLabel;
+        ? 'Both regimes result in equal tax'
+        : taxResult.regimeLabel || ('Saves you ' + f(taxResult.absSavings));
 
-    // Populate blurred findings with top real insights
-    const findingsEl = document.querySelector('.report-findings-preview');
+    const findingsEl = document.getElementById('blurFindings');
     if (findingsEl && insightResult.insights.length) {
-        findingsEl.innerHTML = insightResult.insights.slice(0, 4).map(ins => {
+        findingsEl.innerHTML = insightResult.insights.slice(0, 3).map(ins => {
             const dotClass = ins.type === 'risk' ? 'risk' : ins.type === 'opportunity' ? 'opp' : 'good';
-            const impactStr = ins.impact > 0 ? ': ' + fmt(ins.impact) : '';
-            return `<div class="finding-row"><span class="f-dot ${dotClass}"></span><span>${ins.title}${impactStr}</span></div>`;
+            return `<div class="finding-row"><span class="f-dot ${dotClass}"></span><span>${ins.title}</span></div>`;
         }).join('');
     }
 
-    // Insight badges
     document.getElementById('insightCount').textContent =
         `${insightResult.counts.total} personalised insights found`;
-
     document.getElementById('insightBadges').innerHTML = [
         insightResult.counts.risk > 0 ? `<span class="insight-badge risk">⚠️ ${insightResult.counts.risk} risk${insightResult.counts.risk > 1 ? 's' : ''}</span>` : '',
         insightResult.counts.opportunity > 0 ? `<span class="insight-badge opportunity">💡 ${insightResult.counts.opportunity} opportunit${insightResult.counts.opportunity > 1 ? 'ies' : 'y'}</span>` : '',
@@ -537,60 +544,132 @@ function updateGateScreen(pan) {
 
     if (insightResult.totalPotentialSavings > 0) {
         document.getElementById('savingsTeaser').textContent =
-            `💰 ${fmt(insightResult.totalPotentialSavings)} in potential savings identified`;
+            `💰 ${f(insightResult.totalPotentialSavings)} in potential savings identified`;
         document.getElementById('savingsTeaser').style.display = '';
     } else {
         document.getElementById('savingsTeaser').style.display = 'none';
     }
+}
 
-    // WhatsApp link
-    const msg = encodeURIComponent(`Hi, I need my Tax Optimization Report.\nPAN: ${pan}`);
-    document.getElementById('waCta').href = `https://wa.me/919992819995?text=${msg}`;
+// ── Lead Gate Validation ──
+function validateLeadForm() {
+    const wa = (document.getElementById('whatsappNumber').value || '').trim();
+    const email = (document.getElementById('leadEmail').value || '').trim();
+    const valid = wa.length === 10 && /^[6-9]\d{9}$/.test(wa) && email.includes('@') && email.includes('.');
+    document.getElementById('getReportBtn').disabled = !valid;
+}
+
+async function submitLeadAndGetReport() {
+    const wa = (document.getElementById('whatsappNumber').value || '').trim();
+    const email = (document.getElementById('leadEmail').value || '').trim();
+    const pan = document.getElementById('panNumber').value.trim().toUpperCase();
+    const name = (document.getElementById('fullName').value || '').trim();
+
+    if (wa.length !== 10 || !/^[6-9]\d{9}$/.test(wa)) {
+        toast('Enter a valid 10-digit WhatsApp number', 'error'); return;
+    }
+    if (!email.includes('@')) { toast('Enter a valid email', 'error'); return; }
+
+    const btn = document.getElementById('getReportBtn');
+    btn.disabled = true;
+    btn.textContent = 'Generating your report...';
+
+    try {
+        // Generate PDF client-side
+        const inputs = collectFormInputs();
+        inputs.pan = pan;
+        inputs.name = name;
+        inputs.incomeType = selectedType;
+        const pdfBase64 = generateReportBase64(taxResult, insightResult, inputs, pan);
+        console.log('[PDF] Generated, size:', Math.round(pdfBase64.length / 1024), 'KB');
+
+        // Upload PDF + lead data to Apps Script
+        const leadPayload = {
+            action: 'submitLead',
+            pan, name, mobile: wa, email,
+            incomeType: selectedType,
+            grossIncome: Number(inputs.basicSalary || 0) + Number(inputs.da || 0) + Number(inputs.hra || 0) + Number(inputs.specialAllowance || 0) + Number(inputs.lta || 0),
+            basicSalary: inputs.basicSalary || 0,
+            hra: inputs.hra || 0,
+            specialAllowance: inputs.specialAllowance || 0,
+            sec80C: inputs.sec80C || 0,
+            healthIns: (Number(inputs.healthInsSelf) || 0) + (Number(inputs.healthInsParents) || 0),
+            homeLoan: inputs.homeLoanSOP || 0,
+            otherInputs: JSON.stringify(inputs),
+            score: insightResult.score,
+            band: insightResult.band,
+            regime: taxResult.recommendation,
+            oldTax: taxResult.old.roundedTax,
+            newTax: taxResult.new.roundedTax,
+            regimeSavings: taxResult.absSavings,
+            insightCount: insightResult.counts.total,
+            totalSavings: insightResult.totalPotentialSavings,
+            reportData: JSON.stringify({ inputs, taxResult, insights: insightResult }),
+            pdfBase64: pdfBase64,
+            utmSource: _utm.source,
+            utmMedium: _utm.medium,
+            utmCampaign: _utm.campaign,
+            device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
+            referrer: document.referrer || 'Direct'
+        };
+
+        // Use fetch POST (not sendBeacon — allows larger payloads)
+        fetch(SHEETS_URL, {
+            method: 'POST', mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(leadPayload)
+        }).then(() => console.log('[Sheets] Lead + PDF submitted'))
+          .catch(e => console.error('[Sheets] Submit error:', e));
+
+        // Open WhatsApp with pre-filled message
+        const msg = encodeURIComponent(`Hi, I need my Tax Optimization Report.\nName: ${name}\nPAN: ${pan}`);
+        window.open(`https://wa.me/919992819995?text=${msg}`, '_blank');
+
+        btn.innerHTML = '✅ Report Sent!';
+        toast('Report sent! Check WhatsApp for your PDF.', 'success');
+
+    } catch (err) {
+        console.error('[Lead] Error:', err);
+        toast('Something went wrong. Please try again.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Get My Report on WhatsApp';
+    }
 }
 
 // ── Google Sheets Storage ──
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwsPcKeOEVefggD2b9_CJSFVsZ2qKSy4mZ4-e_AKGb0oYAqUol7e5Ss7X6slHoFwjC5/exec';
 
 async function storeReport(pan, inputs, taxRes, insightRes) {
-    if (!SHEETS_URL) { console.log('[Sheets] URL not configured, skipping'); return; }
+    if (!SHEETS_URL) return;
     try {
         const payload = {
-            pan, name: extractedData.personalInfo?.name || '',
+            action: 'storeData',
+            pan, name: inputs.name || '',
             mobile: '', email: '',
             incomeType: selectedType,
+            grossIncome: Number(inputs.basicSalary || 0) + Number(inputs.da || 0) + Number(inputs.hra || 0) + Number(inputs.specialAllowance || 0) + Number(inputs.lta || 0),
+            basicSalary: inputs.basicSalary || 0,
+            hra: inputs.hra || 0,
+            specialAllowance: inputs.specialAllowance || 0,
+            sec80C: inputs.sec80C || 0,
+            healthIns: (Number(inputs.healthInsSelf) || 0) + (Number(inputs.healthInsParents) || 0),
+            homeLoan: inputs.homeLoanSOP || 0,
+            otherInputs: JSON.stringify(inputs),
             score: insightRes.score, band: insightRes.band,
+            regime: taxRes.recommendation,
+            oldTax: taxRes.old.roundedTax, newTax: taxRes.new.roundedTax,
+            regimeSavings: taxRes.absSavings,
             insightCount: insightRes.counts.total,
             totalSavings: insightRes.totalPotentialSavings,
-            regime: taxRes.recommendation,
-            regimeSavings: taxRes.absSavings,
-            oldTax: taxRes.old.roundedTax,
-            newTax: taxRes.new.roundedTax,
-            reportData: JSON.stringify({ inputs, taxResult: taxRes, insights: insightRes })
+            reportData: JSON.stringify({ inputs, taxResult: taxRes, insights: insightRes }),
+            utmSource: _utm.source, utmMedium: _utm.medium, utmCampaign: _utm.campaign,
+            device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
+            referrer: document.referrer || 'Direct'
         };
-
         const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain' });
         navigator.sendBeacon(SHEETS_URL, blob);
-        console.log('[Sheets] Report stored for PAN:', pan);
+        console.log('[Sheets] Data stored for PAN:', pan);
     } catch (e) { console.error('[Sheets] Store error:', e); }
-}
-
-// ── Email Fallback ──
-function showEmailForm() {
-    document.getElementById('emailForm').classList.toggle('visible');
-}
-
-function submitEmail() {
-    const email = document.getElementById('fallbackEmail').value.trim();
-    if (!email || !email.includes('@')) { toast('Enter a valid email', 'error'); return; }
-    toast('We\'ll send your report to ' + email, 'success');
-    // Store email for manual follow-up
-    if (SHEETS_URL) {
-        fetch(SHEETS_URL, {
-            method: 'POST', mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pan: document.getElementById('panNumber').value, email, type: 'email_fallback' })
-        }).catch(() => {});
-    }
 }
 
 // ── Modal ──
@@ -608,6 +687,16 @@ function toast(msg, type = 'info') {
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── UTM Tracking ──
+const _utm = (function() {
+    const p = new URLSearchParams(window.location.search);
+    return {
+        source: p.get('utm_source') || '',
+        medium: p.get('utm_medium') || '',
+        campaign: p.get('utm_campaign') || ''
+    };
+})();
 
 // ── Init ──
 showScreen(1);
