@@ -118,7 +118,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div>
             <label>Full Name <span style="color:var(--red)">*</span></label>
-            <input type="text" id="fullName" placeholder="Enter your full name" style="margin-top:4px;text-transform:capitalize;font-weight:600;font-size:14px">
+            <input type="text" id="fullName" placeholder="Enter your full name" style="margin-top:4px">
           </div>
           <div>
             <label>PAN Number <span style="color:var(--red)">*</span></label>
@@ -336,14 +336,14 @@
           <div class="form-group" style="margin-bottom:14px">
             <label style="font-size:13px;font-weight:700;color:var(--navy)">WhatsApp Number <span style="color:var(--red)">*</span></label>
             <div style="display:flex;gap:8px;margin-top:4px">
-              <span style="padding:10px 12px;background:var(--tint-light);border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;color:var(--navy)">+91</span>
-              <input type="tel" id="whatsappNumber" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;letter-spacing:1px" oninput="this.value=this.value.replace(/[^0-9]/g,'');validateLeadForm()">
+              <span style="padding:10px 12px;background:var(--tint-light);border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;color:var(--navy);font-family:inherit;display:flex;align-items:center">+91</span>
+              <input type="tel" id="whatsappNumber" placeholder="9876543210" maxlength="10" pattern="[0-9]{10}" style="flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-weight:500;letter-spacing:1px;font-family:inherit;color:var(--text)" oninput="this.value=this.value.replace(/[^0-9]/g,'');validateLeadForm()">
             </div>
             <div class="field-hint" style="margin-top:3px">We'll send your detailed PDF report here</div>
           </div>
           <div class="form-group" style="margin-bottom:20px">
             <label style="font-size:13px;font-weight:700;color:var(--navy)">Email Address <span style="color:var(--red)">*</span></label>
-            <input type="email" id="leadEmail" placeholder="you@example.com" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;margin-top:4px" oninput="validateLeadForm()">
+            <input type="email" id="leadEmail" placeholder="you@example.com" style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-weight:500;font-family:inherit;color:var(--text);margin-top:4px" oninput="validateLeadForm()">
             <div class="field-hint" style="margin-top:3px">For backup delivery and future tax updates</div>
           </div>
           <button class="btn btn-orange" id="getReportBtn" onclick="submitLeadAndGetReport()" disabled style="width:100%;justify-content:center;font-size:16px;padding:16px 28px">

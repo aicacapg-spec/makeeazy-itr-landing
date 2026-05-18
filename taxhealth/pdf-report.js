@@ -289,7 +289,8 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
             var ins = insights[i];
             var detail = ins.detail || '';
             var detailLines = doc.splitTextToSize(detail, CW - 14);
-            var detailH = Math.min(detailLines.length, 2) * 4;
+            var showLines = Math.min(detailLines.length, 3);
+            var detailH = showLines * 4;
             var boxH = 14 + detailH + 4;
 
             if (needsNewPage(boxH + 8)) {
@@ -334,12 +335,14 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
                 doc.text(fmt(ins.impact), CW + M - 4, y + 7.5, { align: 'right' });
             }
 
-            // Detail
+            // Detail (show up to 3 lines for premium feel)
             if (detail) {
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(7.5);
                 doc.setTextColor(...GRAY);
-                doc.text(detailLines.slice(0, 2).join(' '), M + 4, y + 14);
+                for (var dl = 0; dl < showLines; dl++) {
+                    doc.text(detailLines[dl], M + 4, y + 14 + (dl * 4));
+                }
             }
 
             y += boxH + 4;
@@ -383,15 +386,15 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
             }
 
             doc.setFillColor(...LIGHT_BG);
-            doc.roundedRect(M, y, CW, 28, 2, 2, 'F');
+            doc.roundedRect(M, y, CW, 32, 2, 2, 'F');
 
             // Rank circle
             doc.setFillColor(...ORANGE);
-            doc.circle(M + 9, y + 11, 5, 'F');
+            doc.circle(M + 9, y + 12, 5, 'F');
             doc.setTextColor(...WHITE);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(10);
-            doc.text(String(i + 1), M + 9, y + 13.5, { align: 'center' });
+            doc.text(String(i + 1), M + 9, y + 14.5, { align: 'center' });
 
             // Title
             doc.setTextColor(...DARK);
@@ -399,12 +402,14 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
             doc.setFontSize(10);
             doc.text(opp.title || '', M + 20, y + 10);
 
-            // Detail
+            // Detail (show 2 lines)
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7.5);
             doc.setTextColor(...GRAY);
             var dl = doc.splitTextToSize(opp.detail || '', CW - 28);
-            doc.text(dl[0] || '', M + 20, y + 18);
+            for (var dli = 0; dli < Math.min(dl.length, 2); dli++) {
+                doc.text(dl[dli] || '', M + 20, y + 18 + (dli * 4));
+            }
 
             // Save amount
             if (opp.impact > 0) {
@@ -414,7 +419,7 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
                 doc.text('Save ' + fmt(opp.impact), CW + M - 4, y + 10, { align: 'right' });
             }
 
-            y += 32;
+            y += 36;
         }
 
         // Total savings bar
@@ -429,9 +434,23 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
         }
 
         registerFooter(recPageNum);
-    } else {
-        // No opportunities — add a small "well optimised" section if insights page exists
-        // (Don't add a blank page)
+    } else if (insights.length > 0) {
+        // No opportunities — show "well optimised" message at the bottom
+        // Add it to the last insight page if there's space
+        var lastInsightPage = doc.internal.getNumberOfPages();
+        doc.setPage(lastInsightPage);
+        if (!needsNewPage(40)) {
+            y += 10;
+            doc.setFillColor(...GREEN);
+            doc.roundedRect(M, y, CW, 26, 3, 3, 'F');
+            doc.setTextColor(...WHITE);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(14);
+            doc.text('Your tax profile is well optimised!', W / 2, y + 12, { align: 'center' });
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text('No major improvement areas identified. Keep it up.', W / 2, y + 21, { align: 'center' });
+        }
     }
 
     // ════════════════════════════════════════

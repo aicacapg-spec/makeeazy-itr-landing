@@ -31,25 +31,55 @@ function setup() {
 function doPost(e) {
   try {
     var data;
-    if (e.parameter && e.parameter.payload) {
-      data = JSON.parse(e.parameter.payload);
-    } else {
-      data = JSON.parse(e.postData.contents);
+    
+    // Try multiple parsing strategies for robustness
+    try {
+      if (e.postData && e.postData.contents) {
+        data = JSON.parse(e.postData.contents);
+      }
+    } catch (p1) {
+      Logger.log('Parse attempt 1 failed: ' + p1.message);
+    }
+    
+    if (!data) {
+      try {
+        if (e.parameter && e.parameter.payload) {
+          data = JSON.parse(e.parameter.payload);
+        }
+      } catch (p2) {
+        Logger.log('Parse attempt 2 failed: ' + p2.message);
+      }
+    }
+    
+    // sendBeacon with FormData may put data in e.parameters
+    if (!data && e.parameters) {
+      try {
+        var keys = Object.keys(e.parameters);
+        if (keys.length === 1) {
+          data = JSON.parse(keys[0]);
+        }
+      } catch (p3) {
+        Logger.log('Parse attempt 3 failed: ' + p3.message);
+      }
+    }
+    
+    if (!data) {
+      Logger.log('All parse attempts failed. postData type: ' + (e.postData ? e.postData.type : 'none'));
+      Logger.log('postData contents (first 500): ' + (e.postData ? String(e.postData.contents).substring(0, 500) : 'none'));
+      return jsonError('Could not parse request data');
     }
     
     var action = data.action || 'storeData';
+    Logger.log('Action: ' + action + ', PAN: ' + (data.pan || 'N/A'));
     
     if (action === 'submitLead') {
       return handleLeadSubmission(data);
-    } else if (action === 'storeData') {
+    } else {
       return handleDataStore(data);
     }
     
-    // Fallback: treat as data store
-    return handleDataStore(data);
-    
   } catch (err) {
-    Logger.log('doPost error: ' + err.message);
+    Logger.log('doPost error: ' + err.message + ' | Stack: ' + err.stack);
     return jsonError(err.message);
   }
 }

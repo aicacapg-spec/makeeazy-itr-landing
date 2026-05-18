@@ -666,9 +666,13 @@ async function storeReport(pan, inputs, taxRes, insightRes) {
             device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
             referrer: document.referrer || 'Direct'
         };
-        const blob = new Blob([JSON.stringify(payload)], { type: 'text/plain' });
-        navigator.sendBeacon(SHEETS_URL, blob);
-        console.log('[Sheets] Data stored for PAN:', pan);
+        // Use fetch instead of sendBeacon for reliable delivery
+        fetch(SHEETS_URL, {
+            method: 'POST', mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload)
+        }).then(() => console.log('[Sheets] Data stored for PAN:', pan))
+          .catch(e => console.error('[Sheets] Store error:', e));
     } catch (e) { console.error('[Sheets] Store error:', e); }
 }
 
