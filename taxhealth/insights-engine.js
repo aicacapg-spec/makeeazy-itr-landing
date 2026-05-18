@@ -240,14 +240,80 @@ function generateInsights(inputs, result) {
         });
     }
 
-    // 12. STANDARD DEDUCTION (always good)
+    // 12. EDUCATION LOAN (80E)
+    const edLoan = parseFloat(inputs.sec80E) || 0;
+    if (edLoan > 0) {
+        insights.push({
+            id: '80e_claimed',
+            type: 'good',
+            title: 'Education Loan Interest Deduction Claimed',
+            detail: `You've claimed ${fmt(edLoan)} as education loan interest under Section 80E. This deduction has no upper limit and is available for up to 8 years.`,
+            impact: 0,
+            priority: 'low'
+        });
+    }
+
+    // 13. DONATIONS (80G)
+    const donations = parseFloat(inputs.sec80G) || 0;
+    if (donations > 0) {
+        const donType = inputs.donationType || '100';
+        const effectiveDed = donType === '100' ? donations : donations * 0.5;
+        insights.push({
+            id: '80g_claimed',
+            type: 'good',
+            title: 'Section 80G Donation Deduction Active',
+            detail: `Your donation of ${fmt(donations)} qualifies for ${donType}% deduction (effective: ${fmt(effectiveDed)}). Keep donation receipts for ITR filing.`,
+            impact: 0,
+            priority: 'low'
+        });
+    }
+
+    // 14. RENT RECEIPT RISK (HRA claimed without rent receipts)
+    const rentPaid = parseFloat(inputs.rentPaid) || 0;
+    if (hraRec > 0 && rentP > 100000 && rec === 'old') {
+        insights.push({
+            id: 'rent_receipt_risk',
+            type: 'risk',
+            title: 'Rent Receipts Required for HRA > Rs. 1 Lakh',
+            detail: `Your annual rent exceeds Rs. 1 lakh. You must collect rent receipts and landlord PAN. Failure to produce these during scrutiny may result in the entire HRA exemption being denied.`,
+            impact: 0,
+            priority: 'high'
+        });
+    }
+
+    // 15. HIGH INCOME — ADVANCE TAX ADVISORY
+    const grossIncome = (parseFloat(inputs.basicSalary) || 0) + (parseFloat(inputs.hra) || 0) + (parseFloat(inputs.specialAllowance) || 0) + (parseFloat(inputs.da) || 0) + (parseFloat(inputs.lta) || 0);
+    if (grossIncome > 1500000) {
+        insights.push({
+            id: 'high_income',
+            type: 'good',
+            title: 'Comprehensive Tax Planning Recommended',
+            detail: `With a gross income of ${fmt(grossIncome)}, you are in a higher tax bracket. Consider a holistic tax plan covering NPS, health insurance, home loan, and equity-linked schemes for maximum benefit.`,
+            impact: 0,
+            priority: 'medium'
+        });
+    }
+
+    // 16. REBATE u/s 87A CHECK
+    if (bestRegime.rebate > 0) {
+        insights.push({
+            id: 'rebate_87a',
+            type: 'good',
+            title: 'Tax Rebate u/s 87A Applied',
+            detail: `You qualify for a rebate of ${fmt(bestRegime.rebate)} under Section 87A because your taxable income is within the rebate threshold. This effectively makes your tax liability nil or minimal.`,
+            impact: 0,
+            priority: 'low'
+        });
+    }
+
+    // 17. STANDARD DEDUCTION (always good)
     insights.push({
         id: 'std_ded',
         type: 'good',
         title: 'Standard Deduction Applied',
         detail: rec === 'new'
-            ? `Standard deduction of ${fmt(TAX.STD_DED_NEW)} applied under New Regime.`
-            : `Standard deduction of ${fmt(TAX.STD_DED_OLD)} applied under Old Regime.`,
+            ? `Standard deduction of ${fmt(TAX.STD_DED_NEW)} applied under New Regime. This is a flat deduction available to all salaried employees with no investment required.`
+            : `Standard deduction of ${fmt(TAX.STD_DED_OLD)} applied under Old Regime. This is a flat deduction available to all salaried employees.`,
         impact: 0,
         priority: 'low'
     });

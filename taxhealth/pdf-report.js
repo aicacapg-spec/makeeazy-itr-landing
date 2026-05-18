@@ -114,8 +114,9 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     doc.text('FY 2025-26  |  AY 2026-27', W / 2, 66, { align: 'center' });
-    doc.setFontSize(9);
-    doc.setTextColor(255, 255, 255, 150);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...WHITE);
     doc.text('Prepared exclusively for', W / 2, 80, { align: 'center' });
 
     // Taxpayer details card
@@ -139,7 +140,7 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
 
     // Tax Health Score
     y = 160;
-    var scoreColor = score > 80 ? GREEN : score > 60 ? AMBER : RED;
+    var scoreColor = score > 60 ? GREEN : score > 40 ? AMBER : RED;
     doc.setFillColor(...scoreColor);
     doc.roundedRect(M, y, CW, 30, 3, 3, 'F');
     doc.setTextColor(...WHITE);
@@ -254,20 +255,29 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
     drawRegimeBox(colR, 'New Regime', taxResult.new, rec === 'new' || rec === 'same');
     y += 130;
 
-    // Verdict bar
-    var verdictColor = rec === 'same' ? GRAY : GREEN;
-    doc.setFillColor(verdictColor[0], verdictColor[1], verdictColor[2], 15);
-    doc.roundedRect(M, y, CW, 18, 3, 3, 'F');
-    doc.setDrawColor(...verdictColor);
-    doc.setLineWidth(0.4);
-    doc.roundedRect(M, y, CW, 18, 3, 3, 'S');
-    doc.setTextColor(...verdictColor);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    var verdictText = rec === 'same'
-        ? 'Both regimes result in the same tax liability.'
-        : (bestLabel + ' saves you ' + fmt(taxResult.absSavings));
-    doc.text(verdictText, W / 2, y + 11, { align: 'center' });
+    // Verdict bar — brand colors
+    doc.setFillColor(...NAVY);
+    doc.roundedRect(M, y, CW, 22, 3, 3, 'F');
+    doc.setFillColor(...ORANGE);
+    doc.roundedRect(M, y + 22, CW, 3, 0, 0, 'F');
+    if (rec === 'same') {
+        doc.setTextColor(...WHITE);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('Both regimes result in the same tax liability', W / 2, y + 14, { align: 'center' });
+    } else {
+        doc.setTextColor(...WHITE);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text('Recommended:', W / 2 - 30, y + 10, { align: 'right' });
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.text(bestLabel, W / 2 - 26, y + 10);
+        doc.setTextColor(...ORANGE);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('You save ' + fmt(taxResult.absSavings), W / 2, y + 20, { align: 'center' });
+    }
 
     registerFooter(2);
 
@@ -287,11 +297,28 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
 
         for (var i = 0; i < insights.length; i++) {
             var ins = insights[i];
+            var col = typeColors[ins.type] || GRAY;
+            var bg = typeBg[ins.type] || LIGHT_BG;
+            var badge = typeBadge[ins.type] || 'INFO';
+
+            // Measure title wrapping (leave room for badge + impact)
+            var titleText = ins.title || '';
+            var titleMaxW = CW - 50;
+            if (ins.impact > 0) titleMaxW -= 30;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            var titleLines = doc.splitTextToSize(titleText, titleMaxW);
+            var titleH = titleLines.length * 4.5;
+
+            // Measure detail wrapping
             var detail = ins.detail || '';
-            var detailLines = doc.splitTextToSize(detail, CW - 14);
-            var showLines = Math.min(detailLines.length, 3);
-            var detailH = showLines * 4;
-            var boxH = 14 + detailH + 4;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.5);
+            var detailLines = doc.splitTextToSize(detail, CW - 20);
+            var showDetailLines = Math.min(detailLines.length, 4);
+            var detailH = showDetailLines * 4;
+
+            var boxH = 8 + titleH + 3 + detailH + 6;
 
             if (needsNewPage(boxH + 8)) {
                 registerFooter(insightPageNum);
@@ -301,51 +328,50 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
                 y = 26;
             }
 
-            var col = typeColors[ins.type] || GRAY;
-            var bg = typeBg[ins.type] || LIGHT_BG;
-            var badge = typeBadge[ins.type] || 'INFO';
-
+            // Card background
             doc.setFillColor(...bg);
-            doc.roundedRect(M, y, CW, boxH, 2, 2, 'F');
+            doc.roundedRect(M, y, CW, boxH, 3, 3, 'F');
+            doc.setDrawColor(col[0], col[1], col[2]);
+            doc.setLineWidth(0.3);
+            doc.line(M, y, M, y + boxH); // left accent line
 
             // Badge
             doc.setFillColor(...col);
-            doc.roundedRect(M + 4, y + 3, 26, 5.5, 1.5, 1.5, 'F');
+            doc.roundedRect(M + 6, y + 4, 24, 5.5, 1.5, 1.5, 'F');
             doc.setTextColor(...WHITE);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(5.5);
-            doc.text(badge, M + 17, y + 7, { align: 'center' });
+            doc.text(badge, M + 18, y + 8, { align: 'center' });
 
-            // Title
+            // Title (properly wrapped)
             doc.setTextColor(...DARK);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9.5);
-            var titleMaxW = CW - 80;
-            var titleText = ins.title || '';
-            if (doc.getTextWidth(titleText) > titleMaxW) {
-                titleText = titleText.substring(0, 40) + '...';
+            doc.setFontSize(9);
+            var tyPos = y + 8;
+            for (var tl = 0; tl < titleLines.length; tl++) {
+                doc.text(titleLines[tl], M + 34, tyPos + (tl * 4.5));
             }
-            doc.text(titleText, M + 34, y + 7.5);
 
-            // Impact on right
+            // Impact on right (first line of title)
             if (ins.impact > 0) {
                 doc.setTextColor(...col);
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(9);
-                doc.text(fmt(ins.impact), CW + M - 4, y + 7.5, { align: 'right' });
+                doc.text(fmt(ins.impact), CW + M - 6, y + 8, { align: 'right' });
             }
 
-            // Detail (show up to 3 lines for premium feel)
+            // Detail (properly wrapped, up to 4 lines)
             if (detail) {
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(7.5);
                 doc.setTextColor(...GRAY);
-                for (var dl = 0; dl < showLines; dl++) {
-                    doc.text(detailLines[dl], M + 4, y + 14 + (dl * 4));
+                var dyPos = tyPos + titleH + 2;
+                for (var dl = 0; dl < showDetailLines; dl++) {
+                    doc.text(detailLines[dl], M + 8, dyPos + (dl * 4));
                 }
             }
 
-            y += boxH + 4;
+            y += boxH + 5;
         }
 
         // Total potential savings bar
@@ -377,7 +403,23 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
 
         for (var i = 0; i < Math.min(opportunities.length, 6); i++) {
             var opp = opportunities[i];
-            if (needsNewPage(36)) {
+
+            // Measure title
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            var recTitleLines = doc.splitTextToSize(opp.title || '', CW - 40);
+            var recTitleH = recTitleLines.length * 5;
+
+            // Measure detail
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            var recDetailLines = doc.splitTextToSize(opp.detail || '', CW - 32);
+            var showRecDetail = Math.min(recDetailLines.length, 3);
+            var recDetailH = showRecDetail * 4.5;
+
+            var recBoxH = 8 + recTitleH + 3 + recDetailH + 8;
+
+            if (needsNewPage(recBoxH + 8)) {
                 registerFooter(recPageNum);
                 recPageNum++;
                 doc.addPage();
@@ -385,41 +427,48 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
                 y = 26;
             }
 
+            // Card bg
             doc.setFillColor(...LIGHT_BG);
-            doc.roundedRect(M, y, CW, 32, 2, 2, 'F');
+            doc.roundedRect(M, y, CW, recBoxH, 3, 3, 'F');
+            doc.setDrawColor(...ORANGE);
+            doc.setLineWidth(0.4);
+            doc.line(M, y, M, y + recBoxH); // orange left accent
 
             // Rank circle
             doc.setFillColor(...ORANGE);
-            doc.circle(M + 9, y + 12, 5, 'F');
+            doc.circle(M + 12, y + 12, 6, 'F');
             doc.setTextColor(...WHITE);
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            doc.text(String(i + 1), M + 9, y + 14.5, { align: 'center' });
+            doc.setFontSize(11);
+            doc.text(String(i + 1), M + 12, y + 14.5, { align: 'center' });
 
-            // Title
+            // Title (wrapped)
             doc.setTextColor(...DARK);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(10);
-            doc.text(opp.title || '', M + 20, y + 10);
-
-            // Detail (show 2 lines)
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7.5);
-            doc.setTextColor(...GRAY);
-            var dl = doc.splitTextToSize(opp.detail || '', CW - 28);
-            for (var dli = 0; dli < Math.min(dl.length, 2); dli++) {
-                doc.text(dl[dli] || '', M + 20, y + 18 + (dli * 4));
+            var rtyPos = y + 10;
+            for (var rtl = 0; rtl < recTitleLines.length; rtl++) {
+                doc.text(recTitleLines[rtl], M + 24, rtyPos + (rtl * 5));
             }
 
-            // Save amount
+            // Save amount on right
             if (opp.impact > 0) {
                 doc.setTextColor(...GREEN);
                 doc.setFont('helvetica', 'bold');
-                doc.setFontSize(9);
-                doc.text('Save ' + fmt(opp.impact), CW + M - 4, y + 10, { align: 'right' });
+                doc.setFontSize(10);
+                doc.text('Save ' + fmt(opp.impact), CW + M - 6, y + 10, { align: 'right' });
             }
 
-            y += 36;
+            // Detail (wrapped)
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(...GRAY);
+            var rdyPos = rtyPos + recTitleH + 2;
+            for (var rdl = 0; rdl < showRecDetail; rdl++) {
+                doc.text(recDetailLines[rdl], M + 24, rdyPos + (rdl * 4.5));
+            }
+
+            y += recBoxH + 6;
         }
 
         // Total savings bar
