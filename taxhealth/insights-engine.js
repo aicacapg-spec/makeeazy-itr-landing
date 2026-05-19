@@ -50,7 +50,7 @@ function generateInsights(inputs, result) {
             regimeDetail += ' Note: Business/profession taxpayers have continuity implications when switching regimes. Review with a professional before opting out.';
         }
         insights.push({
-            id: 'regime', type: result.absSavings > 5000 ? 'risk' : 'opportunity',
+            id: 'regime', type: 'info',
             title: rec === 'new' ? 'New Regime is Better for You' : 'Old Regime is Better for You',
             detail: regimeDetail,
             impact: result.absSavings,
@@ -368,37 +368,35 @@ function generateInsights(inputs, result) {
     // ═══════════════════════════════════════
     var rawScore = 55; // Neutral base
 
-    // Regime decision (25 pts max)
+    // Regime decision (15 pts max)
     if (result.savings !== 0) {
-        rawScore += result.absSavings > 25000 ? 15 : result.absSavings > 5000 ? 10 : 5;
+        rawScore += result.absSavings > 25000 ? 12 : result.absSavings > 5000 ? 8 : 4;
     }
 
-    // Tax efficiency — based on missed savings vs income (30 pts max)
+    // Tax efficiency — based on missed savings vs income (25 pts max)
     var missedSavings = insights.filter(function(i) { return i.type === 'opportunity'; })
         .reduce(function(s, i) { return s + (i.impact || 0); }, 0);
     if (grossIncome > 0) {
         var missedPct = (missedSavings / grossIncome) * 100;
-        if (missedPct < 1) rawScore += 28;
-        else if (missedPct < 3) rawScore += 20;
-        else if (missedPct < 5) rawScore += 12;
-        else if (missedPct < 10) rawScore += 5;
+        if (missedPct < 0.5) rawScore += 25;
+        else if (missedPct < 2) rawScore += 18;
+        else if (missedPct < 5) rawScore += 10;
+        else if (missedPct < 10) rawScore += 4;
         // else +0
     } else {
-        rawScore += 15; // no income data, neutral
+        rawScore += 12; // no income data, neutral
     }
 
-    // Risk flags (20 pts max, deduct from 20)
-    var riskPenalty = 0;
+    // Positive actions (15 pts max)
+    var goodCount = insights.filter(function(i) { return i.type === 'good'; }).length;
+    rawScore += Math.min(goodCount * 5, 15);
+
+    // Risk flags — deduct directly from total (no cap!)
     insights.forEach(function(i) {
         if (i.type === 'risk') {
-            riskPenalty += i.priority === 'high' ? 8 : i.priority === 'medium' ? 5 : 3;
+            rawScore -= i.priority === 'high' ? 8 : i.priority === 'medium' ? 5 : 3;
         }
     });
-    rawScore += Math.max(0, 20 - riskPenalty);
-
-    // Positive actions (20 pts max)
-    var goodCount = insights.filter(function(i) { return i.type === 'good'; }).length;
-    rawScore += Math.min(goodCount * 5, 20);
 
     var score = Math.max(25, Math.min(92, rawScore));
 

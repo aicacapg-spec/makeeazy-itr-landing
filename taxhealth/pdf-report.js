@@ -1,4 +1,4 @@
-﻿/**
+/**
  * MakeEazy Tax Optimization Report â€” PDF Generator v3
  * Premium branded PDF using jsPDF. Dynamic pages, no blanks.
  * Uses Rs. for currency (jsPDF default fonts lack â‚¹ glyph).
@@ -345,7 +345,7 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
     var hBiz = inputs.businessType && inputs.businessType !== 'none';
     var gI = (parseFloat(inputs.basicSalary)||0) + (parseFloat(inputs.hra)||0) + (parseFloat(inputs.specialAllowance)||0);
     if (td > 0) ctaCards.push({ic:'!',cl:AMBER,t:'Deduction Verification',d:'Incorrect or unsupported deductions in ITR can lead to notices under Section 143(1) or trigger scrutiny. Our CA team verifies every claim and ensures proper documentation before filing.'});
-    if (hCG > 0) ctaCards.push({ic:'!',cl:RED,t:'Capital Gains â€” Needs Attention for Filing',d:'Capital gains require careful reporting with correct asset classification, holding periods, and exemption claims. Incorrect filing can trigger scrutiny. Let our experts handle this.'});
+    if (hCG > 0) ctaCards.push({ic:'!',cl:RED,t:'Capital Gains - Needs Attention for Filing',d:'Capital gains require careful reporting with correct asset classification, holding periods, and exemption claims. Incorrect filing can trigger scrutiny. Let our experts handle this.'});
     if (hBiz) ctaCards.push({ic:'?',cl:NAVY,t:'Business Due Diligence',d:'Get a comprehensive review of your business tax compliance and discover how to transform your business efficiency with MakeEazy.'});
     if (gI > 1000000) ctaCards.push({ic:'i',cl:NAVY,t:'Income Tax Department Data Matching',d:'The Income Tax Department cross-checks your filed returns against their data records. Our team ensures your reported income, TDS credits, and deductions match before you file.'});
     ctaCards.push({ic:'+',cl:GREEN,t:'Get Your ITR Filed by MakeEazy',d:'Accurate, compliant filing backed by Chartered Accountants. We handle everything from document collection to submission.'});
