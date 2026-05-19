@@ -1,365 +1,441 @@
 /**
- * MakeEazy Insights Engine
- * Generates real, computed insights using marginal impact analysis.
- * Each insight shows exact ₹ amount by running the tax engine with/without the factor.
+ * MakeEazy Insights Engine v4
+ * Regime-aware, what-if analysis, conversion-optimized.
+ * Each insight: Fact → Urgency → CTA hook
  */
 
-// Depends on tax-engine.js being loaded first (computeTax, TAX, fmt)
-
-/**
- * Generate all applicable insights for the given inputs and tax result.
- * @param {Object} inputs - The raw form inputs object
- * @param {Object} result - Output from computeTax(inputs)
- * @returns {Object} { insights: Array, score: Number, band: String, totalSavings: Number }
- */
 function generateInsights(inputs, result) {
     const insights = [];
-    const rec = result.recommendation; // 'old' | 'new' | 'same'
+    const rec = result.recommendation;
     const bestRegime = rec === 'old' ? result.old : result.new;
+    const isOldBetter = rec === 'old';
+    const isNewBetter = rec === 'new';
+    const fmtR = n => {
+        const num = Math.round(Number(n) || 0);
+        if (num >= 10000000) return 'Rs. ' + (num / 10000000).toFixed(2) + ' Cr';
+        if (num >= 100000) return 'Rs. ' + (num / 100000).toFixed(2) + ' L';
+        return 'Rs. ' + num.toLocaleString('en-IN');
+    };
 
-    // 1. REGIME COMPARISON — always first
+    // Helper: what-if marginal impact (recomputes tax with modified input)
+    function whatIf(overrides) {
+        const modified = Object.assign({}, inputs, overrides);
+        const modResult = computeTax(modified);
+        // Compare best regime tax
+        const currentBest = bestRegime.roundedTax;
+        const modOld = modResult.old.roundedTax;
+        const modNew = modResult.new.roundedTax;
+        const modBest = Math.min(modOld, modNew);
+        return Math.max(0, currentBest - modBest);
+    }
+
+    // Helper: what-if for OLD regime only
+    function whatIfOld(overrides) {
+        const modified = Object.assign({}, inputs, overrides);
+        const modResult = computeTax(modified);
+        return Math.max(0, result.old.roundedTax - modResult.old.roundedTax);
+    }
+
+    // ═══════════════════════════════════════
+    // CATEGORY A: REGIME & STRUCTURE
+    // ═══════════════════════════════════════
+
+    // 1. REGIME RECOMMENDATION
+    var isBusiness = (inputs.businessType && inputs.businessType !== 'none');
     if (result.savings !== 0) {
+        var regimeDetail = rec === 'new'
+            ? 'New Regime offers lower tax by ' + fmtR(result.absSavings) + ' for your profile.'
+            : 'Old Regime saves ' + fmtR(result.absSavings) + ' thanks to your deductions and exemptions.';
+        if (isBusiness) {
+            regimeDetail += ' Note: Business/profession taxpayers have continuity implications when switching regimes. Review with a professional before opting out.';
+        }
         insights.push({
-            id: 'regime',
-            type: result.absSavings > 5000 ? 'risk' : 'opportunity',
-            title: rec === 'new' ? 'New Regime is better for you' : 'Old Regime is better for you',
-            detail: result.regimeLabel + '. ' +
-                    (rec === 'new'
-                        ? 'Your deduction usage doesn\'t offset the lower New Regime slab rates.'
-                        : 'Your deductions under Old Regime reduce your taxable income significantly.'),
+            id: 'regime', type: result.absSavings > 5000 ? 'risk' : 'opportunity',
+            title: rec === 'new' ? 'New Regime is Better for You' : 'Old Regime is Better for You',
+            detail: regimeDetail,
             impact: result.absSavings,
             priority: result.absSavings > 20000 ? 'high' : 'medium'
         });
     } else {
         insights.push({
-            id: 'regime',
-            type: 'good',
-            title: 'Both regimes result in the same tax',
-            detail: 'Your profile balances out equally under both regimes. You can choose either with no difference.',
-            impact: 0,
-            priority: 'low'
+            id: 'regime', type: 'good',
+            title: 'Both Regimes Result in Same Tax',
+            detail: 'Your profile balances equally under both regimes.',
+            impact: 0, priority: 'low'
         });
     }
 
-    // Helper: compute marginal impact of a change
-    function marginalImpact(overrides) {
-        const modified = { ...inputs, ...overrides };
-        const modResult = computeTax(modified);
-        const currentBestTax = bestRegime.roundedTax;
-        const modBestTax = rec === 'old' ? modResult.old.roundedTax : modResult.new.roundedTax;
-        return currentBestTax - modBestTax; // positive = savings from the change
+    // 2. EFFECTIVE TAX RATE
+    var grossIncome = (parseFloat(inputs.basicSalary) || 0) + (parseFloat(inputs.hra) || 0) +
+        (parseFloat(inputs.specialAllowance) || 0) + (parseFloat(inputs.da) || 0) +
+        (parseFloat(inputs.lta) || 0) + (parseFloat(inputs.interestIncome) || 0) +
+        (parseFloat(inputs.otherIncome) || 0) + (parseFloat(inputs.familyPension) || 0);
+    if (grossIncome > 0) {
+        var effRate = ((bestRegime.roundedTax / grossIncome) * 100).toFixed(1);
+        insights.push({
+            id: 'eff_rate', type: 'info',
+            title: 'Your Effective Tax Rate: ' + effRate + '%',
+            detail: 'This is the actual percentage of your gross income going to tax. There may be room to optimise this further with professional guidance.',
+            impact: 0, priority: 'low'
+        });
     }
 
-    // 2. 80C GAP
-    const current80C = Math.min(parseFloat(inputs.sec80C) || 0, TAX.LIMIT_80C);
-    if (current80C < TAX.LIMIT_80C) {
-        const gap = TAX.LIMIT_80C - current80C;
-        const saving = marginalImpact({ sec80C: TAX.LIMIT_80C });
-        if (saving > 0) {
+    // 3. REBATE u/s 87A
+    if (bestRegime.rebate > 0) {
+        var rebateDetail = 'You qualify for a rebate of ' + fmtR(bestRegime.rebate) + ' under Section 87A, reducing your tax liability significantly.';
+        // CG + rebate conflict check
+        var hasCG = (parseFloat(inputs.stcgEquity) || 0) + (parseFloat(inputs.ltcgEquity) || 0) + (parseFloat(inputs.ltcgOther) || 0);
+        if (hasCG > 0) {
+            rebateDetail += ' However, capital gains taxed at special rates are not covered by this rebate and may still attract tax.';
+        }
+        insights.push({
+            id: 'rebate_87a', type: hasCG > 0 ? 'risk' : 'good',
+            title: hasCG > 0 ? 'Rebate Applied — But Capital Gains May Still Attract Tax' : 'Tax Rebate u/s 87A Applied',
+            detail: rebateDetail,
+            impact: 0, priority: hasCG > 0 ? 'high' : 'low'
+        });
+    }
+
+    // ═══════════════════════════════════════
+    // CATEGORY B: WHAT-IF ANALYSIS
+    // ═══════════════════════════════════════
+
+    var sec80C = parseFloat(inputs.sec80C) || 0;
+    var sec80CCD1B = parseFloat(inputs.sec80CCD1B) || 0;
+    var hiSelf = parseFloat(inputs.healthInsSelf) || 0;
+    var hiParents = parseFloat(inputs.healthInsParents) || 0;
+    var hraRec = parseFloat(inputs.hra) || 0;
+    var rentP = parseFloat(inputs.rentPaid) || 0;
+    var empNPS = parseFloat(inputs.employerNPS) || 0;
+    var interestInc = parseFloat(inputs.interestIncome) || 0;
+    var sec80TTA = parseFloat(inputs.sec80TTA) || 0;
+    var homeLoanSOP = parseFloat(inputs.homeLoanSOP) || 0;
+    var sec80E = parseFloat(inputs.sec80E) || 0;
+    var sec80G = parseFloat(inputs.sec80G) || 0;
+
+    // 4. 80C WHAT-IF
+    if (sec80C < TAX.LIMIT_80C) {
+        var gap80C = TAX.LIMIT_80C - sec80C;
+        var saving80C = whatIf({ sec80C: String(TAX.LIMIT_80C) });
+        var savingOld80C = whatIfOld({ sec80C: String(TAX.LIMIT_80C) });
+        if (saving80C > 0) {
             insights.push({
-                id: '80c_gap',
-                type: 'opportunity',
-                title: '80C Deduction Room Available',
-                detail: `You've claimed ${fmt(current80C)} of the ${fmt(TAX.LIMIT_80C)} limit. ` +
-                        `Investing ${fmt(gap)} more in PPF, ELSS, or life insurance ` +
-                        `could save you ${fmt(saving)} in tax.`,
-                impact: saving,
-                priority: saving > 10000 ? 'high' : 'medium'
+                id: '80c_gap', type: 'opportunity',
+                title: 'Section 80C — Save ' + fmtR(saving80C) + ' More',
+                detail: 'You have used ' + fmtR(sec80C) + ' of ' + fmtR(TAX.LIMIT_80C) + ' limit. Investing ' + fmtR(gap80C) + ' more can reduce your tax. Speak to our CA to find the right instrument for your risk profile.',
+                impact: saving80C, priority: saving80C > 10000 ? 'high' : 'medium'
+            });
+        } else if (savingOld80C > 0 && isNewBetter) {
+            insights.push({
+                id: '80c_dead', type: 'risk',
+                title: 'Section 80C — Review Needed',
+                detail: 'Additional 80C investment of ' + fmtR(gap80C) + ' would save ' + fmtR(savingOld80C) + ' under Old Regime, but New Regime is already ' + fmtR(result.absSavings) + ' cheaper. Evaluate as a financial product, not just a tax tool. Our advisors can help you decide.',
+                impact: 0, priority: 'medium'
             });
         }
     } else {
+        // 5. 80C MAXED
         insights.push({
-            id: '80c_maxed',
-            type: 'good',
+            id: '80c_maxed', type: 'good',
             title: 'Section 80C Fully Utilised',
-            detail: `You've invested the maximum ${fmt(TAX.LIMIT_80C)} under 80C. Well done.`,
-            impact: 0,
-            priority: 'low'
+            detail: 'You have maximised your 80C limit of ' + fmtR(TAX.LIMIT_80C) + '.' + (isNewBetter ? ' Under your recommended New Regime, this does not reduce tax but remains a good financial habit.' : ' This is actively saving you tax under Old Regime.'),
+            impact: 0, priority: 'low'
         });
     }
 
-    // 3. NPS (80CCD1B) MISSED
-    const currentNPS = parseFloat(inputs.sec80CCD1B) || 0;
-    if (currentNPS < TAX.LIMIT_80CCD1B) {
-        const saving = marginalImpact({ sec80CCD1B: TAX.LIMIT_80CCD1B });
-        if (saving > 0) {
+    // 6. NPS 80CCD(1B) WHAT-IF
+    if (sec80CCD1B < TAX.LIMIT_80CCD1B) {
+        var gapNPS = TAX.LIMIT_80CCD1B - sec80CCD1B;
+        var savingNPS = whatIf({ sec80CCD1B: String(TAX.LIMIT_80CCD1B) });
+        var savingNPSOld = whatIfOld({ sec80CCD1B: String(TAX.LIMIT_80CCD1B) });
+        if (savingNPS > 0) {
             insights.push({
-                id: 'nps_missed',
-                type: 'opportunity',
-                title: 'NPS Investment Can Save More Tax',
-                detail: `Investing ${fmt(TAX.LIMIT_80CCD1B - currentNPS)} in NPS under Section 80CCD(1B) ` +
-                        `could save you an additional ${fmt(saving)}.`,
-                impact: saving,
-                priority: saving > 5000 ? 'high' : 'medium'
+                id: 'nps_gap', type: 'opportunity',
+                title: 'NPS (80CCD1B) — Save ' + fmtR(savingNPS) + ' More',
+                detail: 'Investing ' + fmtR(gapNPS) + ' in NPS gives an additional deduction under Old Regime. NPS also builds your retirement corpus.',
+                impact: savingNPS, priority: savingNPS > 10000 ? 'high' : 'medium'
+            });
+        } else if (savingNPSOld > 0 && isNewBetter) {
+            insights.push({
+                id: 'nps_dead', type: 'info',
+                title: 'NPS (80CCD1B) — No Tax Benefit Under New Regime',
+                detail: 'Self NPS contribution of ' + fmtR(gapNPS) + ' would save ' + fmtR(savingNPSOld) + ' only under Old Regime. However, NPS offers retirement benefits beyond tax savings.',
+                impact: 0, priority: 'low'
             });
         }
     }
 
-    // 4. HEALTH INSURANCE (80D) GAP
-    const hiSelf    = parseFloat(inputs.healthInsSelf) || 0;
-    const hiParents = parseFloat(inputs.healthInsParents) || 0;
-    if (hiSelf === 0 && hiParents === 0) {
-        const selfLimit = (inputs.selfSenior80D === 'yes') ? TAX.LIMIT_80D_SENIOR : TAX.LIMIT_80D_REGULAR;
-        const saving = marginalImpact({ healthInsSelf: selfLimit });
-        if (saving > 0) {
+    // 7. HEALTH INSURANCE SELF (80D)
+    if (hiSelf === 0) {
+        var savingHI = whatIf({ healthInsSelf: '25000' });
+        if (savingHI > 0) {
             insights.push({
-                id: '80d_gap',
-                type: 'opportunity',
-                title: 'Health Insurance Premium Deduction Available',
-                detail: `You haven't claimed any health insurance premium deduction. ` +
-                        `Premiums up to ${fmt(selfLimit)} for self/family (and more for parents) ` +
-                        `can save you ${fmt(saving)} in tax under Section 80D.`,
-                impact: saving,
-                priority: 'medium'
+                id: '80d_self', type: 'opportunity',
+                title: 'Health Insurance — Save ' + fmtR(savingHI) + ' + Protect Your Family',
+                detail: 'A health insurance premium of Rs. 25,000 gives you tax savings and essential financial protection. This is both a tax benefit and a safety net.',
+                impact: savingHI, priority: 'high'
+            });
+        } else {
+            insights.push({
+                id: '80d_self_dead', type: 'info',
+                title: 'Health Insurance — No Tax Benefit Under Current Regime',
+                detail: 'Health insurance premium does not reduce tax under New Regime, but it remains essential for financial protection. Do not skip it.',
+                impact: 0, priority: 'low'
             });
         }
     }
 
-    // 5. HRA OPTIMISATION
-    const hraRec = parseFloat(inputs.hra) || 0;
-    const rentP  = parseFloat(inputs.rentPaid) || 0;
-    if (hraRec > 0 && rentP === 0) {
-        // Estimate: if they paid rent = 40% of basic+DA
-        const estRent = (parseFloat(inputs.basicSalary) || 0) * 0.4 * 12 / 12;
-        const saving = marginalImpact({ rentPaid: estRent > 0 ? estRent : hraRec * 0.8 });
-        if (saving > 0) {
+    // 8. HEALTH INSURANCE PARENTS (80D)
+    if (hiSelf > 0 && hiParents === 0) {
+        var savingHIP = whatIf({ healthInsParents: '25000' });
+        if (savingHIP > 0) {
             insights.push({
-                id: 'hra_unclaimed',
-                type: 'opportunity',
-                title: 'HRA Exemption Not Claimed',
-                detail: `You receive HRA of ${fmt(hraRec)} but haven't declared rent paid. ` +
-                        `If you pay rent, claiming HRA exemption could save you up to ${fmt(saving)}.`,
-                impact: saving,
-                priority: 'high'
+                id: '80d_parents', type: 'opportunity',
+                title: 'Parents Health Insurance — Additional ' + fmtR(savingHIP) + ' Saving',
+                detail: 'Paying health insurance for parents gives a separate deduction up to Rs. 25,000 (Rs. 50,000 if senior). Covers your parents and saves tax.',
+                impact: savingHIP, priority: 'medium'
             });
         }
     }
 
-    // 6. HOME LOAN INTEREST
-    const sopInterest = parseFloat(inputs.homeLoanSOP) || 0;
-    const hasSOP = inputs.hasSOP === 'yes' || inputs.hasSOP === true;
-    if (!hasSOP || sopInterest === 0) {
-        const saving = marginalImpact({ hasSOP: 'yes', homeLoanSOP: TAX.LIMIT_SOP_INTEREST });
-        if (saving > 0 && saving < 100000) { // sanity check
+    // 9. 80TTA/TTB
+    if (interestInc > 0 && sec80TTA === 0) {
+        var ttaLimit = (inputs.ageCategory === 'senior' || inputs.ageCategory === 'superSenior') ? TAX.LIMIT_80TTB : TAX.LIMIT_80TTA;
+        var savingTTA = whatIf({ sec80TTA: String(Math.min(interestInc, ttaLimit)) });
+        if (savingTTA > 0) {
             insights.push({
-                id: 'home_loan',
-                type: 'opportunity',
-                title: 'Home Loan Interest Deduction',
-                detail: `Self-occupied property home loan interest up to ${fmt(TAX.LIMIT_SOP_INTEREST)} ` +
-                        `is deductible. If you have a home loan, this could save you ${fmt(saving)}.`,
-                impact: saving,
-                priority: saving > 20000 ? 'high' : 'medium'
+                id: '80tta', type: 'opportunity',
+                title: 'Savings Interest Deduction — Save ' + fmtR(savingTTA),
+                detail: 'Your interest income of ' + fmtR(interestInc) + ' qualifies for deduction up to ' + fmtR(ttaLimit) + ' under Section 80TTA/TTB.',
+                impact: savingTTA, priority: 'medium'
             });
         }
     }
 
-    // 7. 80TTA/TTB NOT CLAIMED
-    const interest = parseFloat(inputs.interestIncome) || 0;
-    const claimed80TTA = parseFloat(inputs.sec80TTA) || 0;
-    const age = inputs.ageCategory || 'regular';
-    if (interest > 0 && claimed80TTA === 0) {
-        const limit = (age === 'senior' || age === 'superSenior') ? TAX.LIMIT_80TTB : TAX.LIMIT_80TTA;
-        const saving = marginalImpact({ sec80TTA: Math.min(interest, limit) });
-        if (saving > 0) {
-            insights.push({
-                id: '80tta_unused',
-                type: 'opportunity',
-                title: `Section 80TTA${(age === 'senior' || age === 'superSenior') ? '/80TTB' : ''} Available`,
-                detail: `You have interest income of ${fmt(interest)} but haven't claimed ` +
-                        `the savings account interest deduction up to ${fmt(limit)}. ` +
-                        `This could save ${fmt(saving)}.`,
-                impact: saving,
-                priority: 'low'
-            });
-        }
-    }
-
-    // 8. EMPLOYER NPS BENEFIT
-    const empNPS = parseFloat(inputs.employerNPS) || 0;
-    const basicSal = parseFloat(inputs.basicSalary) || 0;
-    if (empNPS === 0 && basicSal > 0) {
-        const potentialNPS = basicSal * 0.14;
-        const saving = marginalImpact({ employerNPS: potentialNPS });
-        if (saving > 0) {
-            insights.push({
-                id: 'employer_nps',
-                type: 'opportunity',
-                title: 'Employer NPS Contribution Benefit',
-                detail: `If your employer contributes to NPS (up to 14% of Basic + DA), ` +
-                        `it's tax-free in both regimes. This could save you ${fmt(saving)}.`,
-                impact: saving,
-                priority: 'medium'
-            });
-        }
-    }
-
-    // 9. MULTIPLE FORM 16 RISK
-    if (inputs._multipleForm16) {
+    // 10. 80E EDUCATION LOAN
+    if (sec80E > 0) {
         insights.push({
-            id: 'multi_f16',
-            type: 'risk',
-            title: 'Multiple Employers Detected',
-            detail: 'Having multiple Form 16s means each employer computed TDS independently. ' +
-                    'The combined income may fall in a higher slab, resulting in TDS shortfall. ' +
-                    'Verify your advance tax requirement.',
-            impact: 0,
-            priority: 'high'
-        });
-    }
-
-    // 10. CAPITAL GAINS REVIEW
-    const totalCG = (parseFloat(inputs.stcgEquity) || 0) + (parseFloat(inputs.ltcgEquity) || 0) +
-                    (parseFloat(inputs.stcgOther) || 0) + (parseFloat(inputs.ltcgOther) || 0);
-    if (totalCG > 0) {
-        const ltcgEq = parseFloat(inputs.ltcgEquity) || 0;
-        if (ltcgEq > TAX.CG_LTCG_EQUITY_EXEMPT) {
-            insights.push({
-                id: 'ltcg_threshold',
-                type: 'risk',
-                title: 'LTCG Exceeds Exemption Limit',
-                detail: `Your equity LTCG of ${fmt(ltcgEq)} exceeds the ${fmt(TAX.CG_LTCG_EQUITY_EXEMPT)} ` +
-                        `exemption. Tax of ${fmt(result.new.taxLTCGEquity)} applies at 12.5%.`,
-                impact: result.new.taxLTCGEquity,
-                priority: 'medium'
-            });
-        }
-    }
-
-    // 11. SURCHARGE ZONE ALERT
-    const taxableIncome = bestRegime.taxableTotal;
-    if (taxableIncome > 4500000 && taxableIncome <= 5500000) {
-        insights.push({
-            id: 'surcharge_zone',
-            type: 'risk',
-            title: 'Near Surcharge Threshold',
-            detail: `Your income is near the ₹50L surcharge threshold. ` +
-                    `Small changes in taxable income could trigger 10% surcharge. ` +
-                    `Marginal relief may apply.`,
-            impact: 0,
-            priority: 'medium'
-        });
-    }
-
-    // 12. EDUCATION LOAN (80E)
-    const edLoan = parseFloat(inputs.sec80E) || 0;
-    if (edLoan > 0) {
-        insights.push({
-            id: '80e_claimed',
-            type: 'good',
+            id: '80e_claimed', type: 'good',
             title: 'Education Loan Interest Deduction Claimed',
-            detail: `You've claimed ${fmt(edLoan)} as education loan interest under Section 80E. This deduction has no upper limit and is available for up to 8 years.`,
-            impact: 0,
-            priority: 'low'
+            detail: 'You have claimed ' + fmtR(sec80E) + ' as education loan interest. This deduction has no upper limit. Keep your lender certificate ready for filing.',
+            impact: 0, priority: 'low'
         });
     }
 
-    // 13. DONATIONS (80G)
-    const donations = parseFloat(inputs.sec80G) || 0;
-    if (donations > 0) {
-        const donType = inputs.donationType || '100';
-        const effectiveDed = donType === '100' ? donations : donations * 0.5;
+    // 11. 80G DONATIONS
+    if (sec80G > 0) {
         insights.push({
-            id: '80g_claimed',
-            type: 'good',
+            id: '80g_claimed', type: 'good',
             title: 'Section 80G Donation Deduction Active',
-            detail: `Your donation of ${fmt(donations)} qualifies for ${donType}% deduction (effective: ${fmt(effectiveDed)}). Keep donation receipts for ITR filing.`,
-            impact: 0,
-            priority: 'low'
+            detail: 'Your donation qualifies for deduction. Ensure you have the donation receipt. Note: cash donations above Rs. 2,000 are not deductible.',
+            impact: 0, priority: 'low'
         });
     }
 
-    // 14. RENT RECEIPT RISK (HRA claimed without rent receipts)
-    const rentPaid = parseFloat(inputs.rentPaid) || 0;
-    if (hraRec > 0 && rentP > 100000 && rec === 'old') {
+    // 12. HRA WHAT-IF
+    if (hraRec > 0 && rentP === 0 && isOldBetter) {
+        var savingHRA = whatIf({ rentPaid: String(Math.round(hraRec * 0.8)) });
+        if (savingHRA > 0) {
+            insights.push({
+                id: 'hra_unclaimed', type: 'opportunity',
+                title: 'HRA Exemption — Save Up to ' + fmtR(savingHRA),
+                detail: 'You receive HRA of ' + fmtR(hraRec) + ' but have not declared rent. If you pay rent, this exemption can significantly reduce your tax under Old Regime.',
+                impact: savingHRA, priority: 'high'
+            });
+        }
+    } else if (hraRec > 0 && rentP === 0 && isNewBetter) {
         insights.push({
-            id: 'rent_receipt_risk',
-            type: 'risk',
-            title: 'Rent Receipts Required for HRA > Rs. 1 Lakh',
-            detail: `Your annual rent exceeds Rs. 1 lakh. You must collect rent receipts and landlord PAN. Failure to produce these during scrutiny may result in the entire HRA exemption being denied.`,
-            impact: 0,
-            priority: 'high'
+            id: 'hra_new', type: 'info',
+            title: 'HRA Exemption — Not Applicable Under New Regime',
+            detail: 'HRA exemption is an Old Regime benefit. Under your recommended New Regime, rent payments do not reduce tax.',
+            impact: 0, priority: 'low'
         });
     }
 
-    // 15. HIGH INCOME — ADVANCE TAX ADVISORY
-    const grossIncome = (parseFloat(inputs.basicSalary) || 0) + (parseFloat(inputs.hra) || 0) + (parseFloat(inputs.specialAllowance) || 0) + (parseFloat(inputs.da) || 0) + (parseFloat(inputs.lta) || 0);
-    if (grossIncome > 1500000) {
+    // ═══════════════════════════════════════
+    // CATEGORY C: BOTH REGIMES
+    // ═══════════════════════════════════════
+
+    // 13. EMPLOYER NPS 80CCD(2) — works in BOTH regimes
+    if (empNPS === 0) {
+        var basicDA = (parseFloat(inputs.basicSalary) || 0) + (parseFloat(inputs.da) || 0);
+        var potentialNPS = Math.round(basicDA * 0.10);
+        if (potentialNPS > 0) {
+            var savingEmpNPS = whatIf({ employerNPS: String(potentialNPS) });
+            if (savingEmpNPS > 0) {
+                insights.push({
+                    id: 'emp_nps', type: 'opportunity',
+                    title: 'Employer NPS — Save ' + fmtR(savingEmpNPS) + ' (Works in Both Regimes)',
+                    detail: 'If your employer contributes to NPS, up to ' + fmtR(potentialNPS) + ' is tax-free under BOTH Old and New Regime. Talk to your HR department.',
+                    impact: savingEmpNPS, priority: 'high'
+                });
+            }
+        }
+    } else {
         insights.push({
-            id: 'high_income',
-            type: 'good',
-            title: 'Comprehensive Tax Planning Recommended',
-            detail: `With a gross income of ${fmt(grossIncome)}, you are in a higher tax bracket. Consider a holistic tax plan covering NPS, health insurance, home loan, and equity-linked schemes for maximum benefit.`,
-            impact: 0,
-            priority: 'medium'
+            id: 'emp_nps_good', type: 'good',
+            title: 'Employer NPS Contribution Active',
+            detail: 'Your employer contributes ' + fmtR(empNPS) + ' to NPS. This is one of the best tax benefits — available under both regimes.',
+            impact: 0, priority: 'low'
         });
     }
 
-    // 16. REBATE u/s 87A CHECK
-    if (bestRegime.rebate > 0) {
+    // 14. HOME LOAN
+    if (homeLoanSOP > 0) {
         insights.push({
-            id: 'rebate_87a',
-            type: 'good',
-            title: 'Tax Rebate u/s 87A Applied',
-            detail: `You qualify for a rebate of ${fmt(bestRegime.rebate)} under Section 87A because your taxable income is within the rebate threshold. This effectively makes your tax liability nil or minimal.`,
-            impact: 0,
-            priority: 'low'
+            id: 'home_loan', type: 'good',
+            title: 'Home Loan Interest Deduction Claimed',
+            detail: 'You have claimed ' + fmtR(homeLoanSOP) + ' as home loan interest on self-occupied property.',
+            impact: 0, priority: 'low'
         });
     }
 
-    // 17. STANDARD DEDUCTION (always good)
-    insights.push({
-        id: 'std_ded',
-        type: 'good',
-        title: 'Standard Deduction Applied',
-        detail: rec === 'new'
-            ? `Standard deduction of ${fmt(TAX.STD_DED_NEW)} applied under New Regime. This is a flat deduction available to all salaried employees with no investment required.`
-            : `Standard deduction of ${fmt(TAX.STD_DED_OLD)} applied under Old Regime. This is a flat deduction available to all salaried employees.`,
-        impact: 0,
-        priority: 'low'
+    // ═══════════════════════════════════════
+    // CATEGORY D: RISK ALERTS
+    // ═══════════════════════════════════════
+
+    // 15. LTCG > EXEMPTION
+    var ltcgEq = parseFloat(inputs.ltcgEquity) || 0;
+    if (ltcgEq > TAX.CG_LTCG_EQUITY_EXEMPT) {
+        var ltcgTax = Math.round((ltcgEq - TAX.CG_LTCG_EQUITY_EXEMPT) * TAX.CG_LTCG_EQUITY_RATE);
+        insights.push({
+            id: 'ltcg_breach', type: 'risk',
+            title: 'Capital Gains Exceed Exemption Limit',
+            detail: 'Your LTCG of ' + fmtR(ltcgEq) + ' exceeds the ' + fmtR(TAX.CG_LTCG_EQUITY_EXEMPT) + ' exemption. Approximately ' + fmtR(ltcgTax) + ' in tax applies at 12.5%. Capital gains need careful reporting — incorrect filing can trigger scrutiny.',
+            impact: ltcgTax, priority: 'high'
+        });
+    }
+
+    // 16. SURCHARGE ZONE
+    var totalTaxable = bestRegime.taxableTotal || 0;
+    if (totalTaxable > 4500000 && totalTaxable < 5500000) {
+        insights.push({
+            id: 'surcharge_zone', type: 'risk',
+            title: 'Income Near Surcharge Threshold',
+            detail: 'Your income is near Rs. 50 lakh. Crossing this threshold triggers 10% surcharge on tax. Small changes can significantly increase your tax. Professional planning recommended.',
+            impact: 0, priority: 'high'
+        });
+    }
+
+    // 17. RENT DOCUMENTATION RISK
+    if (hraRec > 0 && rentP > 100000 && isOldBetter) {
+        insights.push({
+            id: 'rent_risk', type: 'risk',
+            title: 'Rent Documentation Required',
+            detail: 'Your annual rent exceeds Rs. 1 lakh. You must maintain rent receipts, agreement, and landlord PAN. Claiming HRA without proper documentation can result in the entire exemption being denied during assessment. We verify all documents before filing.',
+            impact: 0, priority: 'high'
+        });
+    }
+
+    // 18. ADVANCE TAX RISK
+    var nonSalaryIncome = interestInc + (parseFloat(inputs.otherIncome) || 0) +
+        (parseFloat(inputs.stcgEquity) || 0) + (parseFloat(inputs.ltcgEquity) || 0) +
+        (parseFloat(inputs.ltcgOther) || 0) + (parseFloat(inputs.stcgOther) || 0);
+    var isSenior = inputs.ageCategory === 'senior' || inputs.ageCategory === 'superSenior';
+    if (nonSalaryIncome > 50000 && bestRegime.roundedTax > 10000 && !(isSenior && !isBusiness)) {
+        insights.push({
+            id: 'advance_tax', type: 'risk',
+            title: 'Advance Tax May Be Required',
+            detail: 'Your non-salary income of ' + fmtR(nonSalaryIncome) + ' may require advance tax payments if estimated tax exceeds Rs. 10,000 after TDS. Missing deadlines attracts interest under Section 234B and 234C.',
+            impact: 0, priority: 'medium'
+        });
+    }
+
+    // 19. CG + REBATE CONFLICT (FY 2025-26 specific)
+    var totalCG = (parseFloat(inputs.stcgEquity) || 0) + (parseFloat(inputs.ltcgEquity) || 0) + (parseFloat(inputs.ltcgOther) || 0);
+    if (totalCG > 0 && bestRegime.rebate > 0) {
+        insights.push({
+            id: 'cg_rebate', type: 'risk',
+            title: 'Capital Gains May Not Be Covered by Rebate',
+            detail: 'Your rebate reduces tax on regular income, but capital gains taxed at special rates may still attract tax. This is a common filing mistake — our team ensures correct computation.',
+            impact: 0, priority: 'high'
+        });
+    }
+
+    // 20. DOCUMENTATION RISK (always show if deductions claimed)
+    var totalDed = sec80C + sec80CCD1B + hiSelf + hiParents + sec80E + sec80G + (parseFloat(inputs.sec80TTA) || 0);
+    if (totalDed > 0 && isOldBetter) {
+        insights.push({
+            id: 'doc_risk', type: 'risk',
+            title: 'Ensure Your Deduction Claims Are Supported',
+            detail: 'You have claimed ' + fmtR(totalDed) + ' in deductions. Incorrect or unsupported claims can lead to notices under Section 143(1) or trigger scrutiny. Our CA team verifies every claim before submission.',
+            impact: 0, priority: 'medium'
+        });
+    }
+
+    // ═══════════════════════════════════════
+    // SCORING — Simple, not frightening, but creates mild concern
+    // ═══════════════════════════════════════
+    var rawScore = 55; // Neutral base
+
+    // Regime decision (25 pts max)
+    if (result.savings !== 0) {
+        rawScore += result.absSavings > 25000 ? 15 : result.absSavings > 5000 ? 10 : 5;
+    }
+
+    // Tax efficiency — based on missed savings vs income (30 pts max)
+    var missedSavings = insights.filter(function(i) { return i.type === 'opportunity'; })
+        .reduce(function(s, i) { return s + (i.impact || 0); }, 0);
+    if (grossIncome > 0) {
+        var missedPct = (missedSavings / grossIncome) * 100;
+        if (missedPct < 1) rawScore += 28;
+        else if (missedPct < 3) rawScore += 20;
+        else if (missedPct < 5) rawScore += 12;
+        else if (missedPct < 10) rawScore += 5;
+        // else +0
+    } else {
+        rawScore += 15; // no income data, neutral
+    }
+
+    // Risk flags (20 pts max, deduct from 20)
+    var riskPenalty = 0;
+    insights.forEach(function(i) {
+        if (i.type === 'risk') {
+            riskPenalty += i.priority === 'high' ? 8 : i.priority === 'medium' ? 5 : 3;
+        }
     });
+    rawScore += Math.max(0, 20 - riskPenalty);
 
-    // ========== SCORING ==========
-    const weights = { risk: -15, opportunity: -10, good: 10 };
-    let rawScore = 70; // base
-    for (const i of insights) {
-        rawScore += weights[i.type] || 0;
-        // High-impact opportunities/risks shift score more
-        if (i.priority === 'high') rawScore += (i.type === 'good' ? 5 : -5);
-    }
-    const score = Math.max(15, Math.min(95, rawScore));
+    // Positive actions (20 pts max)
+    var goodCount = insights.filter(function(i) { return i.type === 'good'; }).length;
+    rawScore += Math.min(goodCount * 5, 20);
 
-    let band;
-    if (score <= 40) band = 'Critical';
+    var score = Math.max(25, Math.min(92, rawScore));
+
+    var band;
+    if (score <= 40) band = 'Needs Improvement';
     else if (score <= 60) band = 'Needs Attention';
     else if (score <= 80) band = 'Good';
     else band = 'Excellent';
 
-    // Sort: risks first, then opportunities (by impact desc), then good
-    const typeOrder = { risk: 0, opportunity: 1, good: 2 };
-    insights.sort((a, b) => {
+    // Sort: risks first, then opportunities (by impact desc), then info, then good
+    var typeOrder = { risk: 0, opportunity: 1, info: 2, good: 3 };
+    insights.sort(function(a, b) {
         if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type];
         return (b.impact || 0) - (a.impact || 0);
     });
 
-    const totalPotentialSavings = insights
-        .filter(i => i.type === 'opportunity')
-        .reduce((sum, i) => sum + (i.impact || 0), 0);
+    var totalPotentialSavings = insights
+        .filter(function(i) { return i.type === 'opportunity'; })
+        .reduce(function(sum, i) { return sum + (i.impact || 0); }, 0);
 
     return {
-        insights,
-        score,
-        band,
-        totalPotentialSavings,
+        insights: insights,
+        score: score,
+        band: band,
+        totalPotentialSavings: totalPotentialSavings,
+        effectiveTaxRate: grossIncome > 0 ? ((bestRegime.roundedTax / grossIncome) * 100).toFixed(1) : '0',
+        missedSavings: missedSavings,
         counts: {
-            risk: insights.filter(i => i.type === 'risk').length,
-            opportunity: insights.filter(i => i.type === 'opportunity').length,
-            good: insights.filter(i => i.type === 'good').length,
+            risk: insights.filter(function(i) { return i.type === 'risk'; }).length,
+            opportunity: insights.filter(function(i) { return i.type === 'opportunity'; }).length,
+            good: insights.filter(function(i) { return i.type === 'good'; }).length,
+            info: insights.filter(function(i) { return i.type === 'info'; }).length,
             total: insights.length
         }
     };
 }
 
-// Export
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { generateInsights };
 }

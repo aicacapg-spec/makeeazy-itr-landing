@@ -121,10 +121,13 @@ function computeTax(inp) {
     const profTax        = Math.min(v(inp.profTax), TAX.LIMIT_PROF_TAX);
     const employerNPS    = v(inp.employerNPS);
 
-    // Employer NPS cap
+    // Employer NPS cap — varies by regime and employer type
     const salaryForNPS = basic + da;
-    const npsCap = employerType === 'government' ? TAX.NPS_CAP_GOVT : TAX.NPS_CAP_PRIVATE;
-    const validEmployerNPS = Math.min(employerNPS, salaryForNPS * npsCap);
+    // Old Regime: 10% private, 14% govt | New Regime: 14% for all (Budget 2025)
+    const npsCapOld = employerType === 'government' ? 0.14 : 0.10;
+    const npsCapNew = 0.14;
+    const validEmployerNPSOld = Math.min(employerNPS, salaryForNPS * npsCapOld);
+    const validEmployerNPSNew = Math.min(employerNPS, salaryForNPS * npsCapNew);
 
     // HRA Exemption (Old regime only)
     const salaryForHRA = basic + da;
@@ -242,9 +245,9 @@ function computeTax(inp) {
                 const ati = Math.max(0, normalIncome - sec80C - sec80CCD1B);
                 gg80 = Math.min(TAX.LIMIT_80GG_MONTHLY * 12, ati * 0.25, Math.max(0, sec80GGRent - ati * 0.10));
             }
-            totalDeductions = sec80C + sec80CCD1B + total80D + sec80E + sec80G + gg80 + sec80TTA + sec80DD + sec80U + sec80DDB + validEmployerNPS + famPensionDeduction;
+            totalDeductions = sec80C + sec80CCD1B + total80D + sec80E + sec80G + gg80 + sec80TTA + sec80DD + sec80U + sec80DDB + validEmployerNPSOld + famPensionDeduction;
         } else {
-            totalDeductions = validEmployerNPS + famPensionDeduction;
+            totalDeductions = validEmployerNPSNew + famPensionDeduction;
         }
 
         totalDeductions = Math.min(totalDeductions, Math.max(0, normalIncome));
@@ -366,7 +369,7 @@ function computeTax(inp) {
             businessIncome, stcgOther,
             familyPension: famPension,
             normalIncome: Math.max(0, isOld ? salaryIncomeOld : salaryIncomeNew) + interestIncome + otherIncome + hpIncome + businessIncome + stcgOther + famPension,
-            totalDeductions, validEmployerNPS, famPensionDeduction,
+            totalDeductions, validEmployerNPS: isOld ? validEmployerNPSOld : validEmployerNPSNew, famPensionDeduction,
             taxableNormal, taxableTotal: totalTaxableIncome,
             agriTaxAdjustment: agriTaxAdjustment || 0,
             stcgEquity, ltcgEquityTaxable, ltcgOther,
@@ -406,7 +409,7 @@ function computeTax(inp) {
         inputSummary: {
             grossSalary, age, cityType, employerType, residentialStatus,
             sec80C, sec80CCD1B, total80D, sec80E, sec80G, sec80TTA,
-            hraExempt, validEmployerNPS, businessIncome,
+            hraExempt, validEmployerNPS: recommendation === 'old' ? validEmployerNPSOld : validEmployerNPSNew, businessIncome,
             stcgEquity, ltcgEquity, ltcgOther
         }
     };

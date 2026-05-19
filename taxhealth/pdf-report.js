@@ -1,7 +1,7 @@
-/**
- * MakeEazy Tax Optimization Report — PDF Generator v3
+﻿/**
+ * MakeEazy Tax Optimization Report â€” PDF Generator v3
  * Premium branded PDF using jsPDF. Dynamic pages, no blanks.
- * Uses Rs. for currency (jsPDF default fonts lack ₹ glyph).
+ * Uses Rs. for currency (jsPDF default fonts lack â‚¹ glyph).
  */
 
 function generateReportPDF(taxResult, insightResult, inputs, pan) {
@@ -28,7 +28,7 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
     let totalPages = 0;
     const pageFooters = [];
 
-    // Currency formatter — Rs. instead of ₹ (jsPDF default fonts lack ₹ glyph)
+    // Currency formatter â€” Rs. instead of â‚¹ (jsPDF default fonts lack â‚¹ glyph)
     const fmt = n => {
         const num = Math.round(Number(n) || 0);
         if (num >= 10000000) return 'Rs. ' + (num / 10000000).toFixed(2) + ' Cr';
@@ -43,7 +43,7 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
     const band = insightResult.band || '';
     let y;
 
-    // ── Helpers ──
+    // â”€â”€ Helpers â”€â”€
     function addLogo(xPos, yPos, w) {
         try {
             if (typeof MAKEEAZY_LOGO !== 'undefined') {
@@ -97,9 +97,9 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
         return y + requiredSpace > H - 20;
     }
 
-    // ════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // PAGE 1: COVER
-    // ════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     doc.setFillColor(...NAVY);
     doc.rect(0, 0, W, 90, 'F');
     doc.setFillColor(...ORANGE);
@@ -178,9 +178,9 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
 
     registerFooter(1);
 
-    // ════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // PAGE 2: REGIME COMPARISON
-    // ════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     doc.addPage();
     sectionHeader('Regime Comparison');
     y = 26;
@@ -255,7 +255,7 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
     drawRegimeBox(colR, 'New Regime', taxResult.new, rec === 'new' || rec === 'same');
     y += 130;
 
-    // Verdict bar — brand colors
+    // Verdict bar â€” brand colors
     doc.setFillColor(...NAVY);
     doc.roundedRect(M, y, CW, 22, 3, 3, 'F');
     doc.setFillColor(...ORANGE);
@@ -281,320 +281,138 @@ function generateReportPDF(taxResult, insightResult, inputs, pan) {
 
     registerFooter(2);
 
-    // ════════════════════════════════════════
-    // PAGE 3: INSIGHTS (dynamic — may span pages)
-    // ════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // PAGE 3: KEY FINDINGS
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     var insights = insightResult.insights || [];
     if (insights.length > 0) {
         doc.addPage();
-        sectionHeader('Tax Insights & Findings');
+        sectionHeader('Key Findings');
         y = 26;
-
-        var typeBadge = { risk: 'RISK', opportunity: 'OPPORTUNITY', good: 'HEALTHY' };
-        var typeColors = { risk: RED, opportunity: AMBER, good: GREEN };
-        var typeBg = { risk: [254, 242, 242], opportunity: [255, 251, 235], good: [240, 253, 244] };
-        var insightPageNum = 3;
+        var typeBadge = { risk: 'ATTENTION', opportunity: 'OPPORTUNITY', good: 'VERIFIED', info: 'INFO' };
+        var typeColors = { risk: RED, opportunity: AMBER, good: GREEN, info: NAVY };
+        var typeBg = { risk: [254,242,242], opportunity: [255,251,235], good: [240,253,244], info: [240,244,255] };
+        var pgNum = 3;
 
         for (var i = 0; i < insights.length; i++) {
             var ins = insights[i];
             var col = typeColors[ins.type] || GRAY;
             var bg = typeBg[ins.type] || LIGHT_BG;
             var badge = typeBadge[ins.type] || 'INFO';
-
-            // Measure title wrapping (leave room for badge + impact)
-            var titleText = ins.title || '';
-            var titleMaxW = CW - 50;
-            if (ins.impact > 0) titleMaxW -= 30;
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            var titleLines = doc.splitTextToSize(titleText, titleMaxW);
-            var titleH = titleLines.length * 4.5;
-
-            // Measure detail wrapping
-            var detail = ins.detail || '';
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7.5);
-            var detailLines = doc.splitTextToSize(detail, CW - 20);
-            var showDetailLines = Math.min(detailLines.length, 4);
-            var detailH = showDetailLines * 4;
-
-            var boxH = 8 + titleH + 3 + detailH + 6;
-
-            if (needsNewPage(boxH + 8)) {
-                registerFooter(insightPageNum);
-                insightPageNum++;
-                doc.addPage();
-                sectionHeader('Tax Insights (cont.)');
-                y = 26;
-            }
-
-            // Card background
-            doc.setFillColor(...bg);
-            doc.roundedRect(M, y, CW, boxH, 3, 3, 'F');
-            doc.setDrawColor(col[0], col[1], col[2]);
-            doc.setLineWidth(0.3);
-            doc.line(M, y, M, y + boxH); // left accent line
-
-            // Badge
-            doc.setFillColor(...col);
-            doc.roundedRect(M + 6, y + 4, 24, 5.5, 1.5, 1.5, 'F');
-            doc.setTextColor(...WHITE);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(5.5);
-            doc.text(badge, M + 18, y + 8, { align: 'center' });
-
-            // Title (properly wrapped)
-            doc.setTextColor(...DARK);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            var tyPos = y + 8;
-            for (var tl = 0; tl < titleLines.length; tl++) {
-                doc.text(titleLines[tl], M + 34, tyPos + (tl * 4.5));
-            }
-
-            // Impact on right (first line of title)
-            if (ins.impact > 0) {
-                doc.setTextColor(...col);
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(9);
-                doc.text(fmt(ins.impact), CW + M - 6, y + 8, { align: 'right' });
-            }
-
-            // Detail (properly wrapped, up to 4 lines)
-            if (detail) {
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(7.5);
-                doc.setTextColor(...GRAY);
-                var dyPos = tyPos + titleH + 2;
-                for (var dl = 0; dl < showDetailLines; dl++) {
-                    doc.text(detailLines[dl], M + 8, dyPos + (dl * 4));
-                }
-            }
-
-            y += boxH + 5;
+            doc.setFont('helvetica','bold'); doc.setFontSize(9);
+            var tmw = CW - 48; if (ins.impact > 0) tmw -= 32;
+            var tLines = doc.splitTextToSize(ins.title || '', tmw);
+            var tH = tLines.length * 4.5;
+            doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+            var dLines = doc.splitTextToSize(ins.detail || '', CW - 18);
+            var sD = Math.min(dLines.length, 5);
+            var dH = sD * 3.8;
+            var bH = 7 + tH + 2 + dH + 5;
+            if (needsNewPage(bH + 6)) { registerFooter(pgNum); pgNum++; doc.addPage(); sectionHeader('Key Findings (cont.)'); y = 26; }
+            doc.setFillColor(...bg); doc.roundedRect(M, y, CW, bH, 2, 2, 'F');
+            doc.setDrawColor(...col); doc.setLineWidth(0.5); doc.line(M, y+1, M, y+bH-1);
+            doc.setFillColor(...col); doc.roundedRect(M+5, y+3.5, 22, 5, 1.5, 1.5, 'F');
+            doc.setTextColor(...WHITE); doc.setFont('helvetica','bold'); doc.setFontSize(5);
+            doc.text(badge, M+16, y+7, {align:'center'});
+            doc.setTextColor(...DARK); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+            for (var tl=0; tl<tLines.length; tl++) doc.text(tLines[tl], M+30, y+7+(tl*4.5));
+            if (ins.impact > 0) { doc.setTextColor(...col); doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(fmt(ins.impact), CW+M-5, y+7, {align:'right'}); }
+            doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...GRAY);
+            var dY = y + 7 + tH + 1;
+            for (var dl=0; dl<sD; dl++) doc.text(dLines[dl], M+7, dY+(dl*3.8));
+            y += bH + 4;
         }
-
-        // Total potential savings bar
-        if (insightResult.totalPotentialSavings > 0 && !needsNewPage(24)) {
-            y += 6;
-            doc.setFillColor(...GREEN);
-            doc.roundedRect(M, y, CW, 16, 3, 3, 'F');
-            doc.setTextColor(...WHITE);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12);
-            doc.text('Total Potential Savings: ' + fmt(insightResult.totalPotentialSavings), W / 2, y + 11, { align: 'center' });
+        if (insightResult.totalPotentialSavings > 0 && !needsNewPage(20)) {
+            y += 4; doc.setFillColor(...GREEN); doc.roundedRect(M, y, CW, 14, 3, 3, 'F');
+            doc.setTextColor(...WHITE); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+            doc.text('Total Potential Savings: ' + fmt(insightResult.totalPotentialSavings), W/2, y+9.5, {align:'center'});
         }
-
-        registerFooter(insightPageNum);
+        registerFooter(pgNum);
     }
 
-    // ════════════════════════════════════════
-    // PAGE: RECOMMENDATIONS (only if there are opportunities)
-    // ════════════════════════════════════════
-    var opportunities = (insightResult.insights || [])
-        .filter(function(i) { return i.type === 'opportunity'; })
-        .sort(function(a, b) { return (b.impact || 0) - (a.impact || 0); });
-
-    if (opportunities.length > 0) {
-        doc.addPage();
-        sectionHeader('Recommended Actions');
-        y = 26;
-        var recPageNum = pageFooters.length + 1;
-
-        for (var i = 0; i < Math.min(opportunities.length, 6); i++) {
-            var opp = opportunities[i];
-
-            // Measure title
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            var recTitleLines = doc.splitTextToSize(opp.title || '', CW - 40);
-            var recTitleH = recTitleLines.length * 5;
-
-            // Measure detail
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            var recDetailLines = doc.splitTextToSize(opp.detail || '', CW - 32);
-            var showRecDetail = Math.min(recDetailLines.length, 3);
-            var recDetailH = showRecDetail * 4.5;
-
-            var recBoxH = 8 + recTitleH + 3 + recDetailH + 8;
-
-            if (needsNewPage(recBoxH + 8)) {
-                registerFooter(recPageNum);
-                recPageNum++;
-                doc.addPage();
-                sectionHeader('Recommendations (cont.)');
-                y = 26;
-            }
-
-            // Card bg
-            doc.setFillColor(...LIGHT_BG);
-            doc.roundedRect(M, y, CW, recBoxH, 3, 3, 'F');
-            doc.setDrawColor(...ORANGE);
-            doc.setLineWidth(0.4);
-            doc.line(M, y, M, y + recBoxH); // orange left accent
-
-            // Rank circle
-            doc.setFillColor(...ORANGE);
-            doc.circle(M + 12, y + 12, 6, 'F');
-            doc.setTextColor(...WHITE);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
-            doc.text(String(i + 1), M + 12, y + 14.5, { align: 'center' });
-
-            // Title (wrapped)
-            doc.setTextColor(...DARK);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(10);
-            var rtyPos = y + 10;
-            for (var rtl = 0; rtl < recTitleLines.length; rtl++) {
-                doc.text(recTitleLines[rtl], M + 24, rtyPos + (rtl * 5));
-            }
-
-            // Save amount on right
-            if (opp.impact > 0) {
-                doc.setTextColor(...GREEN);
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(10);
-                doc.text('Save ' + fmt(opp.impact), CW + M - 6, y + 10, { align: 'right' });
-            }
-
-            // Detail (wrapped)
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            doc.setTextColor(...GRAY);
-            var rdyPos = rtyPos + recTitleH + 2;
-            for (var rdl = 0; rdl < showRecDetail; rdl++) {
-                doc.text(recDetailLines[rdl], M + 24, rdyPos + (rdl * 4.5));
-            }
-
-            y += recBoxH + 6;
-        }
-
-        // Total savings bar
-        if (insightResult.totalPotentialSavings > 0 && !needsNewPage(24)) {
-            y += 6;
-            doc.setFillColor(...GREEN);
-            doc.roundedRect(M, y, CW, 16, 3, 3, 'F');
-            doc.setTextColor(...WHITE);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12);
-            doc.text('Total Potential Savings: ' + fmt(insightResult.totalPotentialSavings), W / 2, y + 11, { align: 'center' });
-        }
-
-        registerFooter(recPageNum);
-    } else if (insights.length > 0) {
-        // No opportunities — show "well optimised" message at the bottom
-        // Add it to the last insight page if there's space
-        var lastInsightPage = doc.internal.getNumberOfPages();
-        doc.setPage(lastInsightPage);
-        if (!needsNewPage(40)) {
-            y += 10;
-            doc.setFillColor(...GREEN);
-            doc.roundedRect(M, y, CW, 26, 3, 3, 'F');
-            doc.setTextColor(...WHITE);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(14);
-            doc.text('Your tax profile is well optimised!', W / 2, y + 12, { align: 'center' });
-            doc.setFontSize(9);
-            doc.setFont('helvetica', 'normal');
-            doc.text('No major improvement areas identified. Keep it up.', W / 2, y + 21, { align: 'center' });
-        }
-    }
-
-    // ════════════════════════════════════════
-    // LAST PAGE: NEXT STEPS (always present)
-    // ════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // PAGE 4: HOW MAKEEAZY CAN HELP
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     doc.addPage();
-    sectionHeader('Next Steps');
-    y = 34;
-
-    doc.setTextColor(...DARK);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('Need Help With Your Tax Filing?', W / 2, y, { align: 'center' });
-    y += 20;
-
-    var ctas = [
-        {
-            title: 'Talk to a Tax Expert',
-            desc: 'Free 15-minute consultation with our CA team to discuss your specific tax situation and filing strategy.',
-            action: 'Book at calendly.com/makeeazy/support'
-        },
-        {
-            title: 'WhatsApp Us',
-            desc: 'Quick answers to any tax questions. Our experts typically respond within minutes during business hours.',
-            action: 'Message us at wa.me/919992819995'
-        },
-        {
-            title: 'Get Your ITR Filed',
-            desc: 'Accurate, compliant ITR filing backed by Chartered Accountants. We handle documentation to submission.',
-            action: 'Visit makeeazy.in'
-        }
-    ];
-
-    for (var i = 0; i < ctas.length; i++) {
-        doc.setFillColor(...LIGHT_BG);
-        doc.roundedRect(M, y, CW, 34, 3, 3, 'F');
-        doc.setDrawColor(...BORDER);
-        doc.roundedRect(M, y, CW, 34, 3, 3, 'S');
-
-        // Number circle
-        doc.setFillColor(...NAVY);
-        doc.circle(M + 12, y + 13, 6, 'F');
-        doc.setTextColor(...WHITE);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
-        doc.text(String(i + 1), M + 12, y + 15.5, { align: 'center' });
-
-        // Title
-        doc.setTextColor(...NAVY);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text(ctas[i].title, M + 24, y + 12);
-
-        // Description
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(...GRAY);
-        var ctaDl = doc.splitTextToSize(ctas[i].desc, CW - 32);
-        doc.text(ctaDl.slice(0, 2).join(' '), M + 24, y + 20);
-
-        // Action link
-        doc.setTextColor(...ORANGE);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        doc.text(ctas[i].action, M + 24, y + 29);
-
-        y += 40;
+    sectionHeader('How MakeEazy Can Help');
+    y = 28;
+    doc.setTextColor(...DARK); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+    doc.text('Areas Where Professional Guidance Adds Value', W/2, y, {align:'center'});
+    y += 12;
+    var ctaCards = [];
+    var td = (parseFloat(inputs.sec80C)||0) + (parseFloat(inputs.sec80CCD1B)||0) + (parseFloat(inputs.healthInsSelf)||0);
+    var hCG = (parseFloat(inputs.stcgEquity)||0) + (parseFloat(inputs.ltcgEquity)||0) + (parseFloat(inputs.ltcgOther)||0);
+    var hBiz = inputs.businessType && inputs.businessType !== 'none';
+    var gI = (parseFloat(inputs.basicSalary)||0) + (parseFloat(inputs.hra)||0) + (parseFloat(inputs.specialAllowance)||0);
+    if (td > 0) ctaCards.push({ic:'!',cl:AMBER,t:'Deduction Verification',d:'Incorrect or unsupported deductions in ITR can lead to notices under Section 143(1) or trigger scrutiny. Our CA team verifies every claim and ensures proper documentation before filing.'});
+    if (hCG > 0) ctaCards.push({ic:'!',cl:RED,t:'Capital Gains â€” Needs Attention for Filing',d:'Capital gains require careful reporting with correct asset classification, holding periods, and exemption claims. Incorrect filing can trigger scrutiny. Let our experts handle this.'});
+    if (hBiz) ctaCards.push({ic:'?',cl:NAVY,t:'Business Due Diligence',d:'Get a comprehensive review of your business tax compliance and discover how to transform your business efficiency with MakeEazy.'});
+    if (gI > 1000000) ctaCards.push({ic:'i',cl:NAVY,t:'Income Tax Department Data Matching',d:'The Income Tax Department cross-checks your filed returns against their data records. Our team ensures your reported income, TDS credits, and deductions match before you file.'});
+    ctaCards.push({ic:'+',cl:GREEN,t:'Get Your ITR Filed by MakeEazy',d:'Accurate, compliant filing backed by Chartered Accountants. We handle everything from document collection to submission.'});
+    for (var ci=0; ci<ctaCards.length; ci++) {
+        var c = ctaCards[ci];
+        doc.setFont('helvetica','normal'); doc.setFontSize(8);
+        var cDesc = doc.splitTextToSize(c.d, CW-30);
+        var cH = 10 + Math.min(cDesc.length, 4)*4 + 6;
+        if (needsNewPage(cH+6)) break;
+        doc.setFillColor(...LIGHT_BG); doc.roundedRect(M, y, CW, cH, 3, 3, 'F');
+        doc.setDrawColor(...c.cl); doc.setLineWidth(0.5); doc.line(M, y+1, M, y+cH-1);
+        doc.setFillColor(...c.cl); doc.circle(M+10, y+10, 5, 'F');
+        doc.setTextColor(...WHITE); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+        doc.text(c.ic, M+10, y+12.5, {align:'center'});
+        doc.setTextColor(...DARK); doc.setFont('helvetica','bold'); doc.setFontSize(10);
+        doc.text(c.t, M+22, y+10);
+        doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...GRAY);
+        for (var cd=0; cd<Math.min(cDesc.length,4); cd++) doc.text(cDesc[cd], M+22, y+18+(cd*4));
+        y += cH + 5;
     }
-
-    // Disclaimer
-    y += 10;
-    doc.setFontSize(6.5);
-    doc.setTextColor(...GRAY);
-    doc.setFont('helvetica', 'normal');
-    var disclaimer = [
-        'Disclaimer: This report is generated based on the information provided by you. It is for informational purposes only',
-        'and does not constitute tax advice. Please consult a qualified Chartered Accountant for personalised tax planning.',
-        'Tax laws are subject to change. For professional assistance, visit www.makeeazy.in or call +91-9992819995.'
-    ];
-    for (var d = 0; d < disclaimer.length; d++) {
-        doc.text(disclaimer[d], W / 2, y, { align: 'center' });
-        y += 4;
-    }
-
     registerFooter(pageFooters.length + 1);
 
-    // Draw all footers with correct total page count
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // LAST PAGE: NEXT STEPS
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    doc.addPage();
+    sectionHeader('Next Steps');
+    y = 32;
+    doc.setTextColor(...DARK); doc.setFont('helvetica','bold'); doc.setFontSize(16);
+    doc.text('Ready to File With Confidence?', W/2, y, {align:'center'});
+    y += 16;
+    var nSteps = [
+        {t:'Talk to a Tax Expert',d:'Free 15-minute consultation with our CA team to review your report and plan your filing strategy.',a:'Book at calendly.com/makeeazy/support'},
+        {t:'WhatsApp Us',d:'Quick answers to any tax questions. Our experts typically respond within minutes during business hours.',a:'Message us at wa.me/919992819995'},
+        {t:'Get Your ITR Filed',d:'Accurate, CA-backed ITR filing. We handle documentation, verification, and submission end-to-end.',a:'Visit makeeazy.in'}
+    ];
+    for (var si=0; si<nSteps.length; si++) {
+        doc.setFillColor(...LIGHT_BG); doc.roundedRect(M, y, CW, 32, 3, 3, 'F');
+        doc.setDrawColor(...BORDER); doc.roundedRect(M, y, CW, 32, 3, 3, 'S');
+        doc.setFillColor(...NAVY); doc.circle(M+12, y+12, 6, 'F');
+        doc.setTextColor(...WHITE); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+        doc.text(String(si+1), M+12, y+14.5, {align:'center'});
+        doc.setTextColor(...NAVY); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+        doc.text(nSteps[si].t, M+24, y+11);
+        doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...GRAY);
+        doc.text(nSteps[si].d, M+24, y+19);
+        doc.setTextColor(...ORANGE); doc.setFont('helvetica','bold'); doc.setFontSize(8);
+        doc.text(nSteps[si].a, M+24, y+27);
+        y += 38;
+    }
+    // Professional service advisory
+    y += 6;
+    doc.setFillColor(...NAVY); doc.roundedRect(M, y, CW, 20, 3, 3, 'F');
+    doc.setTextColor(...WHITE); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+    doc.text('Income Tax 2025 rules are now applicable.', W/2, y+8, {align:'center'});
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+    doc.text('Be mindful and use a professional service rather than DIY or unreliable alternatives.', W/2, y+15, {align:'center'});
+    // Disclaimer
+    y += 28;
+    doc.setFontSize(6.5); doc.setTextColor(...GRAY); doc.setFont('helvetica','normal');
+    var disc = ['Disclaimer: This report is generated based on the information provided by you. It is for informational purposes only','and does not constitute tax advice. Please consult a qualified Chartered Accountant for personalised tax planning.','Tax laws are subject to change. For professional assistance, visit www.makeeazy.in or call +91-9992819995.'];
+    for (var d=0; d<disc.length; d++) { doc.text(disc[d], W/2, y, {align:'center'}); y += 4; }
+    registerFooter(pageFooters.length + 1);
     drawAllFooters();
-
     return doc;
 }
 
-/**
- * Generate PDF and return as base64 data URI string
- */
 function generateReportBase64(taxResult, insightResult, inputs, pan) {
     var doc = generateReportPDF(taxResult, insightResult, inputs, pan);
     return doc.output('datauristring').split(',')[1];
