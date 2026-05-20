@@ -960,8 +960,20 @@ ul { list-style: none; }
   box-shadow: 0 12px 40px rgba(50,80,159,0.12) !important;
 }
 @media (max-width: 600px) {
-  .game-section { padding: 40px 0 30px; }
-  .game-embed iframe { border-radius: 6px !important; }
+  .game-section { padding: 20px 0 16px; }
+  .game-embed { margin-top: 8px; }
+  .game-embed iframe {
+    border-radius: 6px !important;
+    aspect-ratio: 16/10 !important;
+    min-height: 280px !important;
+  }
+}
+@media (max-width: 400px) {
+  .game-section { padding: 12px 0 10px; }
+  .game-embed iframe {
+    aspect-ratio: 4/3 !important;
+    border-radius: 4px !important;
+  }
 }
 
 
