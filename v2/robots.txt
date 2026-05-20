@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /v2/google-apps-script.js
+
+Sitemap: https://itr.makeeazy.in/sitemap.xml

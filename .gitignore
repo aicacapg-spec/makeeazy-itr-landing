@@ -19,10 +19,18 @@
 
 # V2 Landing Page
 !v2/
-!v2/index.html
-!v2/styles.css
-!v2/script.js
-!v2/hero-illustration.png
+!v2/**
+!favicon.png
+!robots.txt
+!sitemap.xml
+!fix_faq.js
+!google-apps-script.js
+!thumb_*.png
+
+# Game
+!guide/
+!guide/play/
+!guide/play/index.html
 
 # Tax Optimizer Tool
 !taxhealth/

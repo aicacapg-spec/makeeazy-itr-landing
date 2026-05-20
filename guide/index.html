@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ITR Filing Guide AY 2026-27 | What Changed This Year | MakeEazy</title>
+  <meta name="description" content="Complete ITR filing guide for AY 2026-27. Key changes: ITR-1 now covers 2 house properties & LTCG, new F&O reporting, MSME disallowance, extended deadlines. Expert-curated by CAs.">
+  <meta property="og:title" content="ITR Filing Guide AY 2026-27 | MakeEazy">
+  <meta property="og:description" content="Everything that changed in ITR forms this year — deadlines, new mandatory fields, regime comparison, and step-by-step filing process.">
+  <meta property="og:url" content="https://itr.makeeazy.in/guide/">
+  <meta property="og:type" content="article">
+  <link rel="canonical" href="https://itr.makeeazy.in/guide/">
+  <link rel="icon" type="image/png" href="../favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --orange: #F77F00; --orange-dark: #E06600; --navy: #1B2A4A; --navy-deeper: #0f1d36;
+      --green: #16a34a; --red: #dc2626; --amber: #d97706; --blue: #2563eb;
+      --white: #ffffff; --gray-50: #f8f9fb; --gray-100: #f1f3f6; --gray-200: #e2e6ec; --gray-300: #d1d5db;
+      --text-primary: #1a1a2e; --text-secondary: #555; --text-muted: #888;
+      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px; --radius-xl: 20px;
+      --shadow-card: 0 2px 16px rgba(27,42,74,0.07);
+      --shadow-hover: 0 8px 32px rgba(27,42,74,0.12);
+      --transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; color: var(--text-primary); line-height: 1.7; background: var(--gray-50); }
+    .container { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+    a { color: var(--orange); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Sticky Nav ── */
+    .g-nav { background: var(--navy); padding: 14px 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+    .g-nav .container { display: flex; align-items: center; justify-content: space-between; }
+    .g-nav-logo { height: 30px; }
+    .g-nav-right { display: flex; align-items: center; gap: 16px; }
+    .g-nav-back { color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600; transition: color 0.2s; text-decoration: none; }
+    .g-nav-back:hover { color: var(--white); text-decoration: none; }
+    .g-nav-cta { background: var(--orange); color: var(--white); padding: 8px 18px; border-radius: 100px; font-size: 13px; font-weight: 700; text-decoration: none; transition: var(--transition); }
+    .g-nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(247,127,0,0.3); text-decoration: none; }
+
+    /* ── Hero ── */
+    .g-hero { background: linear-gradient(135deg, var(--navy) 0%, #162240 50%, var(--navy-deeper) 100%); color: var(--white); padding: 72px 0 56px; position: relative; overflow: hidden; }
+    .g-hero::before { content: ''; position: absolute; top: -40%; right: -20%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(247,127,0,0.08) 0%, transparent 70%); }
+    .g-hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(247,127,0,0.12); border: 1px solid rgba(247,127,0,0.25); color: var(--orange); padding: 6px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; margin-bottom: 20px; }
+    .g-hero h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(28px, 5vw, 44px); font-weight: 900; line-height: 1.15; margin-bottom: 16px; }
+    .g-hero h1 span { background: linear-gradient(135deg, var(--orange), #ff9f43); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .g-hero-sub { font-size: 17px; color: rgba(255,255,255,0.65); max-width: 640px; margin-bottom: 28px; }
+    .g-hero-stats { display: flex; gap: 32px; flex-wrap: wrap; }
+    .g-hero-stat { text-align: center; }
+    .g-hero-stat-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 900; color: var(--orange); }
+    .g-hero-stat-label { font-size: 12px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+
+    /* ── TOC Pills ── */
+    .g-toc { background: var(--white); border-bottom: 1px solid var(--gray-200); padding: 14px 0; position: sticky; top: 56px; z-index: 90; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .g-toc::-webkit-scrollbar { display: none; }
+    .toc-scroll { display: flex; gap: 8px; white-space: nowrap; padding: 0 4px; }
+    .toc-pill { padding: 7px 16px; border-radius: 100px; border: 1px solid var(--gray-200); background: var(--white); color: var(--text-secondary); font-size: 13px; font-weight: 600; text-decoration: none; transition: var(--transition); flex-shrink: 0; }
+    .toc-pill:hover, .toc-pill.active { background: var(--navy); color: var(--white); border-color: var(--navy); text-decoration: none; }
+
+    /* ── Section Base ── */
+    .g-section { padding: 56px 0; }
+    .g-section + .g-section { border-top: 1px solid var(--gray-200); }
+    .g-section-header { margin-bottom: 32px; }
+    .g-section-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(247,127,0,0.08); color: var(--orange); padding: 4px 12px; border-radius: 100px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .g-section h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800; color: var(--navy); line-height: 1.25; margin-bottom: 10px; }
+    .g-section-desc { color: var(--text-secondary); font-size: 15px; max-width: 700px; }
+
+    /* ── Deadline Cards ── */
+    .deadline-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 24px 0; }
+    .dl-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 20px; transition: var(--transition); position: relative; overflow: hidden; }
+    .dl-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+    .dl-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .dl-card.urgent::before { background: var(--red); }
+    .dl-card.normal::before { background: var(--amber); }
+    .dl-card.extended::before { background: var(--green); }
+    .dl-date { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+    .dl-who { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+    .dl-tag { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .dl-tag.new { background: rgba(22,163,74,0.1); color: var(--green); }
+    .dl-tag.penalty { background: rgba(220,38,38,0.08); color: var(--red); }
+
+    /* ── Countdown Banner ── */
+    .countdown-bar { background: linear-gradient(135deg, var(--red), #991b1b); color: var(--white); border-radius: var(--radius-lg); padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin: 24px 0; }
+    .countdown-bar h3 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+    .countdown-bar p { color: rgba(255,255,255,0.75); font-size: 14px; margin: 0; }
+    .countdown-bar .btn { background: var(--white); color: var(--red); padding: 12px 28px; border-radius: 100px; font-weight: 700; font-size: 14px; text-decoration: none; transition: var(--transition); flex-shrink: 0; }
+    .countdown-bar .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-decoration: none; }
+
+    /* ── What Changed Cards (Visual) ── */
+    .changes-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 24px 0; }
+    .change-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-md); padding: 24px; transition: var(--transition); }
+    .change-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+    .change-card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 14px; }
+    .change-card-icon.green { background: rgba(22,163,74,0.1); }
+    .change-card-icon.blue { background: rgba(37,99,235,0.1); }
+    .change-card-icon.amber { background: rgba(217,119,6,0.1); }
+    .change-card-icon.red { background: rgba(220,38,38,0.08); }
+    .change-card h4 { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--navy); }
+    .change-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+    .change-card .tag { display: inline-block; margin-top: 10px; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; }
+    .change-card .tag-new { background: rgba(22,163,74,0.1); color: var(--green); }
+    .change-card .tag-removed { background: rgba(220,38,38,0.08); color: var(--red); }
+    .change-card .tag-expanded { background: rgba(37,99,235,0.08); color: var(--blue); }
+
+    /* ── Accordion (Collapsible) ── */
+    .accordion { margin: 24px 0; }
+    .acc-item { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-md); margin-bottom: 8px; overflow: hidden; transition: var(--transition); }
+    .acc-item:hover { border-color: var(--gray-300); }
+    .acc-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; cursor: pointer; gap: 12px; }
+    .acc-header h4 { font-size: 15px; font-weight: 700; color: var(--navy); margin: 0; flex: 1; }
+    .acc-badge { padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .acc-badge.itr1 { background: rgba(37,99,235,0.1); color: var(--blue); }
+    .acc-badge.itr2 { background: rgba(22,163,74,0.1); color: var(--green); }
+    .acc-badge.itr3 { background: rgba(217,119,6,0.1); color: var(--amber); }
+    .acc-badge.itr4 { background: rgba(147,51,234,0.1); color: #7c3aed; }
+    .acc-badge.all { background: rgba(220,38,38,0.08); color: var(--red); }
+    .acc-arrow { width: 24px; height: 24px; transition: transform 0.25s; flex-shrink: 0; }
+    .acc-item.open .acc-arrow { transform: rotate(180deg); }
+    .acc-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .acc-body-inner { padding: 0 22px 20px; font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+    .acc-body-inner ul { padding-left: 20px; margin: 8px 0; }
+    .acc-body-inner li { margin-bottom: 6px; }
+    .acc-body-inner strong { color: var(--text-primary); }
+
+    /* ── Comparison Table ── */
+    .compare-wrap { overflow-x: auto; margin: 24px 0; border-radius: var(--radius-md); border: 1px solid var(--gray-200); }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 600px; }
+    .compare-table th { background: var(--navy); color: var(--white); padding: 14px 18px; text-align: left; font-weight: 700; font-size: 13px; white-space: nowrap; }
+    .compare-table td { padding: 13px 18px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr:nth-child(even) td { background: var(--gray-50); }
+    .compare-table .yes { color: var(--green); font-weight: 700; }
+    .compare-table .no { color: var(--red); font-weight: 700; }
+
+    /* ── Form Finder Interactive ── */
+    .form-finder { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 32px; margin: 24px 0; }
+    .ff-question { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 16px; }
+    .ff-options { display: flex; flex-direction: column; gap: 10px; }
+    .ff-opt { padding: 14px 20px; border: 2px solid var(--gray-200); border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+    .ff-opt:hover { border-color: var(--orange); background: rgba(247,127,0,0.03); }
+    .ff-opt.selected { border-color: var(--orange); background: rgba(247,127,0,0.06); }
+    .ff-opt .ff-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .ff-result { margin-top: 20px; padding: 20px; border-radius: var(--radius-md); font-weight: 600; font-size: 15px; display: none; }
+    .ff-result.show { display: block; }
+    .ff-result.itr1 { background: rgba(37,99,235,0.06); border: 1px solid rgba(37,99,235,0.2); color: var(--blue); }
+    .ff-result.itr2 { background: rgba(22,163,74,0.06); border: 1px solid rgba(22,163,74,0.2); color: var(--green); }
+    .ff-result.itr3 { background: rgba(217,119,6,0.06); border: 1px solid rgba(217,119,6,0.2); color: var(--amber); }
+    .ff-result.itr4 { background: rgba(147,51,234,0.06); border: 1px solid rgba(147,51,234,0.2); color: #7c3aed; }
+
+    /* ── Document Checklist ── */
+    .doc-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .doc-tab { padding: 8px 18px; border-radius: 100px; border: 1px solid var(--gray-200); background: var(--white); font-size: 13px; font-weight: 600; cursor: pointer; transition: var(--transition); color: var(--text-secondary); }
+    .doc-tab.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+    .doc-panel { display: none; }
+    .doc-panel.active { display: block; }
+    .doc-list { list-style: none; padding: 0; }
+    .doc-list li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); margin-bottom: 8px; font-size: 14px; transition: var(--transition); }
+    .doc-list li:hover { border-color: var(--gray-300); }
+    .doc-list .doc-icon { flex-shrink: 0; font-size: 18px; }
+    .doc-list .doc-new { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 100px; font-size: 10px; font-weight: 700; background: rgba(22,163,74,0.1); color: var(--green); text-transform: uppercase; vertical-align: middle; }
+
+    /* ── Info Callout ── */
+    .callout { border-radius: var(--radius-md); padding: 20px 24px; margin: 20px 0; font-size: 14px; line-height: 1.6; display: flex; gap: 14px; align-items: flex-start; }
+    .callout-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+    .callout.tip { background: rgba(22,163,74,0.06); border: 1px solid rgba(22,163,74,0.15); }
+    .callout.warning { background: rgba(220,38,38,0.05); border: 1px solid rgba(220,38,38,0.15); }
+    .callout.info { background: rgba(37,99,235,0.05); border: 1px solid rgba(37,99,235,0.15); }
+    .callout.highlight { background: rgba(247,127,0,0.06); border: 1px solid rgba(247,127,0,0.15); }
+    .callout strong { color: var(--text-primary); }
+
+    /* ── Steps Timeline ── */
+    .steps-timeline { margin: 24px 0; position: relative; }
+    .step-item { display: flex; gap: 20px; padding-bottom: 28px; position: relative; }
+    .step-item:last-child { padding-bottom: 0; }
+    .step-line { position: absolute; left: 19px; top: 40px; bottom: 0; width: 2px; background: var(--gray-200); }
+    .step-item:last-child .step-line { display: none; }
+    .step-num { width: 40px; height: 40px; border-radius: 50%; background: var(--navy); color: var(--white); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; flex-shrink: 0; z-index: 1; }
+    .step-content { flex: 1; padding-top: 6px; }
+    .step-content h4 { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+    .step-content p { font-size: 14px; color: var(--text-secondary); margin: 0; }
+
+    /* ── Quiz ── */
+    .quiz-container { margin: 24px 0; }
+    .quiz-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 16px; }
+    .quiz-num { font-size: 12px; font-weight: 700; color: var(--orange); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .quiz-q { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 16px; }
+    .quiz-opts { display: flex; flex-direction: column; gap: 8px; }
+    .quiz-opt { padding: 12px 18px; border: 2px solid var(--gray-200); border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; font-weight: 500; transition: var(--transition); }
+    .quiz-opt:hover { border-color: var(--navy); }
+    .quiz-opt.correct { border-color: var(--green); background: rgba(22,163,74,0.06); }
+    .quiz-opt.wrong { border-color: var(--red); background: rgba(220,38,38,0.04); }
+    .quiz-opt.disabled { pointer-events: none; opacity: 0.7; }
+    .quiz-feedback { margin-top: 12px; font-size: 14px; font-weight: 600; min-height: 20px; }
+
+    /* ── Final CTA ── */
+    .g-cta { background: linear-gradient(135deg, var(--navy), var(--navy-deeper)); padding: 72px 0; text-align: center; color: var(--white); }
+    .g-cta h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 30px; font-weight: 900; margin-bottom: 12px; }
+    .g-cta p { color: rgba(255,255,255,0.65); font-size: 16px; margin-bottom: 28px; max-width: 500px; margin-left: auto; margin-right: auto; }
+    .g-cta-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary { display: inline-block; background: var(--orange); color: var(--white); padding: 14px 32px; border-radius: 100px; font-size: 15px; font-weight: 700; text-decoration: none; transition: var(--transition); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(247,127,0,0.3); text-decoration: none; }
+    .btn-outline { display: inline-block; border: 2px solid rgba(255,255,255,0.25); color: rgba(255,255,255,0.8); padding: 12px 28px; border-radius: 100px; font-size: 14px; font-weight: 600; text-decoration: none; transition: var(--transition); }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.5); color: var(--white); text-decoration: none; }
+
+    /* ── Footer ── */
+    .g-footer { background: var(--navy-deeper); padding: 20px 0; text-align: center; }
+    .g-footer p { color: rgba(255,255,255,0.35); font-size: 12px; }
+    .g-footer a { color: var(--orange); text-decoration: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .g-hero { padding: 56px 0 40px; }
+      .g-hero h1 { font-size: 26px; }
+      .g-hero-stats { gap: 20px; }
+      .g-toc { top: 52px; }
+      .g-section { padding: 40px 0; }
+      .g-section h2 { font-size: 22px; }
+      .countdown-bar { flex-direction: column; text-align: center; padding: 24px; }
+      .form-finder { padding: 24px; }
+      .step-item { gap: 14px; }
+      .g-nav-back span { display: none; }
+      .compare-table { font-size: 13px; }
+      .compare-table th, .compare-table td { padding: 10px 12px; }
+      .changes-grid { grid-template-columns: 1fr; }
+      .deadline-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav class="g-nav">
+  <div class="container">
+    <a href="../"><img src="../logo.png" alt="MakeEazy" class="g-nav-logo"></a>
+    <div class="g-nav-right">
+      <a href="../" class="g-nav-back">← <span>Back to Home</span></a>
+      <a href="../taxhealth/" target="_blank" class="g-nav-cta">Get Tax Report →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<header class="g-hero">
+  <div class="container">
+    <div class="g-hero-badge">📋 Expert-Curated by Chartered Accountants</div>
+    <h1>ITR Filing Guide<br><span>AY 2026-27</span></h1>
+    <p class="g-hero-sub">This year isn't a routine rollover. The Income Tax Act 2025 is in effect, ITR-1 scope expanded dramatically, F&O reporting changed, and deadlines shifted. Here's everything you need to know.</p>
+    <div class="g-hero-stats">
+      <div class="g-hero-stat"><div class="g-hero-stat-num" id="guideDaysLeft">—</div><div class="g-hero-stat-label">Days Left</div></div>
+      <div class="g-hero-stat"><div class="g-hero-stat-num">8+</div><div class="g-hero-stat-label">Key Changes</div></div>
+      <div class="g-hero-stat"><div class="g-hero-stat-num">7</div><div class="g-hero-stat-label">ITR Forms</div></div>
+      <div class="g-hero-stat"><div class="g-hero-stat-num">15+</div><div class="g-hero-stat-label">New Fields</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ── TOC ── -->
+<div class="g-toc" id="guideToc">
+  <div class="container">
+    <div class="toc-scroll">
+      <a href="#deadlines" class="toc-pill">Deadlines</a>
+      <a href="#changes" class="toc-pill">What Changed</a>
+      <a href="#form-finder" class="toc-pill">Find Your Form</a>
+      <a href="#regimes" class="toc-pill">Old vs New</a>
+      <a href="#documents" class="toc-pill">Documents</a>
+      <a href="#deductions" class="toc-pill">Deductions</a>
+      <a href="#process" class="toc-pill">Filing Process</a>
+      <a href="#risks" class="toc-pill">Avoid Mistakes</a>
+      <a href="#quiz" class="toc-pill">Quiz</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Section 1: Deadlines ═══ -->
+<section class="g-section" id="deadlines">
+  <div class="container">
+    <div class="g-section-header">
+      <div class="g-section-tag">⏰ Deadlines</div>
+      <h2>When Should You File?</h2>
+      <p class="g-section-desc">Missing deadlines means penalties of ₹1,000–₹10,000 + interest. Plan ahead.</p>
+    </div>
+
+    <div class="deadline-grid">
+      <div class="dl-card urgent">
+        <div class="dl-date">31 July 2026</div>
+        <div class="dl-who">Salaried, Pension, Capital Gains (no audit)</div>
+        <span class="dl-tag penalty">₹5,000 penalty if missed</span>
+      </div>
+      <div class="dl-card normal">
+        <div class="dl-date">31 August 2026</div>
+        <div class="dl-who">Business / Professional (ITR-3, ITR-4 non-audit)</div>
+        <span class="dl-tag new">✨ NEW — Extended from July</span>
+      </div>
+      <div class="dl-card normal">
+        <div class="dl-date">31 October 2026</div>
+        <div class="dl-who">Audit cases (companies, firms, trusts)</div>
+        <span class="dl-tag penalty">₹5,000 penalty if missed</span>
+      </div>
+      <div class="dl-card extended">
+        <div class="dl-date">31 March 2027</div>
+        <div class="dl-who">Revised & Belated Returns</div>
+        <span class="dl-tag new">✨ Extended from Dec</span>
+      </div>
+    </div>
+
+    <div class="countdown-bar">
+      <div>
+        <h3>⏰ Only <span id="guideDaysLeft2">—</span> days left for salaried filers!</h3>
+        <p>Don't wait for the last-minute rush. Let our CAs handle it stress-free.</p>
+      </div>
+      <a href="https://desk.makeeazy.in" target="_blank" class="btn">File with MakeEazy →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Section 2: What Changed ═══ -->
+<section class="g-section" id="changes">
+  <div class="container">
+    <div class="g-section-header">
+      <div class="g-section-tag">🔄 What's New</div>
+      <h2>8 Key Changes You Must Know</h2>
+      <p class="g-section-desc">AY 2026-27 is NOT a routine rollover. Here's what changed and why it matters.</p>
+    </div>
+
+    <div class="changes-grid">
+      <div class="change-card">
+        <div class="change-card-icon green">🏠</div>
+        <h4>ITR-1 Scope Expanded</h4>
+        <p>Now covers 2 house properties, co-ownership, and LTCG under 112A up to ₹1.25 lakh. Thousands who needed ITR-2 can now use ITR-1.</p>
+        <span class="tag tag-expanded">Expanded</span>
+      </div>
+      <div class="change-card">
+        <div class="change-card-icon blue">📊</div>
+        <h4>Separate F&O Reporting</h4>
+        <p>New dedicated columns in ITR-3, 5, 6 for F&O turnover and income. Can't be lumped with regular business anymore.</p>
+        <span class="tag tag-new">New</span>
+      </div>
+      <div class="change-card">
+        <div class="change-card-icon amber">🏦</div>
+        <h4>ITR-4: Bank Balance Mandatory</h4>
+        <p>Presumptive taxpayers must now disclose bank balance as on 31 March and investments made during the year.</p>
+        <span class="tag tag-new">New</span>
+      </div>
+      <div class="change-card">
+        <div class="change-card-icon green">📅</div>
+        <h4>Deadline Extended to Aug 31</h4>
+        <p>ITR-3 and ITR-4 non-audit filers now get until 31 August 2026. Revised returns extended to 31 March 2027.</p>
+        <span class="tag tag-new">New</span>
+      </div>
+      <div class="change-card">
+        <div class="change-card-icon red">🏭</div>
+        <h4>MSME Disallowance (43B(h))</h4>
+        <p>New column in ITR-3, 5, 6 for interest disallowance on delayed MSME vendor payments. CPC adds it automatically if missed.</p>
+        <span class="tag tag-new">New</span>
+      </div>
+      <div class="change-card">
+        <div class="change-card-icon blue">📉</div>
+        <h4>Dual CG Reporting Removed</h4>
+        <p>Pre/post 23 July 2024 capital gains bifurcation is gone. Single reporting schedule — simpler, but documentation unchanged.</p>
+        <span class="tag tag-removed">Simplified</span>
+      </div>
+      <div class="change-card">
+        <div class="change-card-icon amber">🎗️</div>
+        <h4>Enhanced Donation Disclosure</h4>
+        <p>80G now requires IFSC + transaction reference. 80GGC needs political party name and PAN. Across ALL forms.</p>
+        <span class="tag tag-expanded">Expanded</span>
+      </div>
+      <div class="change-card">
+        <div class="change-card-icon red">🔐</div>
+        <h4>No More Aadhaar Enrolment ID</h4>
+        <p>28-digit Aadhaar Enrolment ID no longer accepted. Only 12-digit Aadhaar linked to PAN works.</p>
+        <span class="tag tag-removed">Removed</span>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <span class="callout-icon">⚠️</span>
+      <div><strong>Corrigendum Alert:</strong> CBDT issued corrections on 10 April 2026 fixing Schedule-IT, sub-row numbering, and Schedule CG references. <strong>Always download the latest utility from the e-filing portal.</strong> Forms downloaded before this date contain errors.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Section 3: Form Finder ═══ -->
+<section class="g-section" id="form-finder">
+  <div class="container">
+    <div class="g-section-header">
+      <div class="g-section-tag">🔍 Find Your Form</div>
+      <h2>Which ITR Form Do You Need?</h2>
+      <p class="g-section-desc">Choosing the wrong form = defective return notice. Answer one question to find yours.</p>
+    </div>
+
+    <div class="form-finder">
+      <div class="ff-question">What best describes your income this year?</div>
+      <div class="ff-options">
+        <div class="ff-opt" onclick="showForm(this, 'itr1', 'ITR-1 (Sahaj) — Salaried with income ≤ ₹50L, up to 2 house properties, LTCG under 112A ≤ ₹1.25L. <strong>Expanded this year!</strong>')">
+          <div class="ff-icon" style="background:rgba(37,99,235,0.1)">💼</div>
+          <div><strong>Salaried / Pension</strong> — no business income, LTCG under ₹1.25L</div>
+        </div>
+        <div class="ff-opt" onclick="showForm(this, 'itr2', 'ITR-2 — Capital gains above ₹1.25L, foreign assets, NRI, director in company, unlisted equity. Dual CG reporting removed this year.')">
+          <div class="ff-icon" style="background:rgba(22,163,74,0.1)">📈</div>
+          <div><strong>Capital Gains / NRI / Foreign Assets</strong> — no business income</div>
+        </div>
+        <div class="ff-opt" onclick="showForm(this, 'itr3', 'ITR-3 — Business, profession, F&O, freelancers. <strong>New F&O separate columns + deadline extended to 31 August.</strong>')">
+          <div class="ff-icon" style="background:rgba(217,119,6,0.1)">🏢</div>
+          <div><strong>Business / Profession / F&O</strong> — any business or professional income</div>
+        </div>
+        <div class="ff-opt" onclick="showForm(this, 'itr4', 'ITR-4 (Sugam) — Presumptive income under 44AD/44ADA/44AE, income ≤ ₹50L. <strong>Now requires bank balance and investments disclosure.</strong>')">
+          <div class="ff-icon" style="background:rgba(147,51,234,0.1)">📋</div>
+          <div><strong>Presumptive Taxation</strong> — small business/profession under 44AD/ADA</div>
+        </div>
+      </div>
+      <div class="ff-result" id="ffResult"></div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">💡</span>
+      <div><strong>Big change this year:</strong> If you sold mutual funds or stocks with LTCG ≤ ₹1.25 lakh (Section 112A), you can now use <strong>ITR-1</strong> — you no longer need ITR-2. But if you have capital losses to carry forward, you still need ITR-2.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Section 4: Old vs New ═══ -->
+<section class="g-section" id="regimes">
+  <div class="container">
+    <div class="g-section-header">
+      <div class="g-section-tag">⚖️ Regime Comparison</div>
+      <h2>Old Regime vs New Regime</h2>
+      <p class="g-section-desc">The new regime is <strong>default</strong>. Wrong choice can be costly and irreversible for some assessees.</p>
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare-table">
+        <tr><th style="width:35%">Feature</th><th>Old Regime</th><th>New Regime (Default)</th></tr>
+        <tr><td><strong>Basic Exemption</strong></td><td>₹2,50,000</td><td>₹3,00,000</td></tr>
+        <tr><td><strong>Standard Deduction</strong></td><td>₹50,000</td><td>₹75,000</td></tr>
+        <tr><td><strong>80C (PPF, ELSS, LIC)</strong></td><td class="yes">✅ Up to ₹1.5L</td><td class="no">❌ Not available</td></tr>
+        <tr><td><strong>HRA Exemption</strong></td><td class="yes">✅ Available</td><td class="no">❌ Not available</td></tr>
+        <tr><td><strong>80D (Health Insurance)</strong></td><td class="yes">✅ Available</td><td class="no">❌ Not available</td></tr>
+        <tr><td><strong>Home Loan Interest (24b)</strong></td><td class="yes">✅ Up to ₹2L</td><td class="no">❌ Not available</td></tr>
+        <tr><td><strong>NPS Extra (80CCD(1B))</strong></td><td class="yes">✅ ₹50,000</td><td class="yes">✅ ₹50,000</td></tr>
+        <tr><td><strong>Rebate u/s 87A</strong></td><td>Up to ₹5L income</td><td>Up to ₹7L income</td></tr>
+        <tr><td><strong>Best For</strong></td><td>Heavy deductions (HRA + 80C + 80D + Home Loan)</td><td>Simple salary, fewer investments</td></tr>
+      </table>
+    </div>
+
+    <div class="callout highlight">
+      <span class="callout-icon">🎯</span>
+      <div><strong>Not sure which saves more?</strong> Our Tax Optimization Report computes both regimes side-by-side and recommends the one that saves you more tax. <a href="../taxhealth/" target="_blank">Get Your Report →</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Section 5: Documents ═══ -->
+<section class="g-section" id="documents">
+  <div class="container">
+    <div class="g-section-header">
+      <div class="g-section-tag">📄 Documents</div>
+      <h2>What You'll Need to File</h2>
+      <p class="g-section-desc">Select your category to see the exact documents required. Items marked <strong>NEW</strong> are first-time requirements for AY 2026-27.</p>
+    </div>
+
+    <div class="doc-tabs">
+      <div class="doc-tab active" onclick="showDocPanel('salaried')">Salaried</div>
+      <div class="doc-tab" onclick="showDocPanel('business')">Business / Professional</div>
+      <div class="doc-tab" onclick="showDocPanel('investor')">Investor / Trader</div>
+      <div class="doc-tab" onclick="showDocPanel('nri')">NRI</div>
+    </div>
+
+    <div class="doc-panel active" id="panel-salaried">
+      <ul class="doc-list">
+        <li><span class="doc-icon">📄</span><div>Form 16 (Part A + Part B) from employer</div></li>
+        <li><span class="doc-icon">🔍</span><div>AIS / TIS download — cross-verify with Income Tax portal <span class="doc-new">Critical</span></div></li>
+        <li><span class="doc-icon">📋</span><div>Form 26AS — TDS credit verification</div></li>
+        <li><span class="doc-icon">💰</span><div>Salary breakup (basic, HRA, allowances, perquisites) — <span class="doc-new">Granular 80C/HRA disclosure now required</span></div></li>
+        <li><span class="doc-icon">🏠</span><div>Housing loan interest certificate (Sec 24b) — for up to 2 properties</div></li>
+        <li><span class="doc-icon">👤</span><div>Tenant's Name, PAN/TAN/Aadhaar for any let-out property <span class="doc-new">NEW</span></div></li>
+        <li><span class="doc-icon">🏦</span><div>Bank interest certificates + FD interest statements</div></li>
+        <li><span class="doc-icon">📈</span><div>Broker capital gains statement — for 112A LTCG ≤ ₹1.25L <span class="doc-new">NEW for ITR-1</span></div></li>
+        <li><span class="doc-icon">🛡️</span><div>80C/80D investment proofs (component-wise breakup)</div></li>
+        <li><span class="doc-icon">🎗️</span><div>80G donation receipts + bank IFSC + transaction ref <span class="doc-new">NEW</span></div></li>
+        <li><span class="doc-icon">🗳️</span><div>80GGC political donation: party name + PAN <span class="doc-new">NEW</span></div></li>
+        <li><span class="doc-icon">🆔</span><div>Aadhaar (12-digit only — enrolment ID no longer accepted) <span class="doc-new">Changed</span></div></li>
+        <li><span class="doc-icon">✍️</span><div>Tax regime declaration — written confirmation recommended</div></li>
+      </ul>
+    </div>
+
+    <div class="doc-panel" id="panel-business">
+      <ul class="doc-list">
+        <li><span class="doc-icon">📊</span><div>Profit & Loss Account and Balance Sheet</div></li>
+        <li><span class="doc-icon">📋</span><div>GST returns (GSTR-1, GSTR-3B, GSTR-9) — cross-check with ITR turnover</div></li>
+        <li><span class="doc-icon">📈</span><div>F&O P&L statement — <strong>must be separate from regular business</strong> <span class="doc-new">NEW</span></div></li>
+        <li><span class="doc-icon">📉</span><div>Intraday trading P&L — separate from F&O <span class="doc-new">NEW</span></div></li>
+        <li><span class="doc-icon">🏭</span><div>MSME vendor payment ageing report with dates <span class="doc-new">NEW</span></div></li>
+        <li><span class="doc-icon">📝</span><div>MSME vendor Udyam registration certificates <span class="doc-new">NEW</span></div></li>
+        <li><span class="doc-icon">🤝</span><div>Partnership deed + remuneration/interest computation <span class="doc-new">NEW fields in Schedule IF</span></div></li>
+        <li><span class="doc-icon">🏦</span><div>Bank balance as at 31 March (for ITR-4 filers) <span class="doc-new">NEW & Mandatory</span></div></li>
+        <li><span class="doc-icon">💼</span><div>Investment details during the year (for ITR-4) <span class="doc-new">NEW</span></div></li>
+        <li><span class="doc-icon">📄</span><div>Form 3CD audit report — MSME clauses 22/26 now cross-checked</div></li>
+      </ul>
+    </div>
+
+    <div class="doc-panel" id="panel-investor">
+      <ul class="doc-list">
+        <li><span class="doc-icon">📊</span><div>Broker P&L — <strong>separate for delivery, intraday, F&O</strong> <span class="doc-new">Must be split</span></div></li>
+        <li><span class="doc-icon">📈</span><div>Capital gains statement with ISIN-wise details (Schedule 112A)</div></li>
+        <li><span class="doc-icon">💸</span><div>STT payment details</div></li>
+        <li><span class="doc-icon">🔄</span><div>Share buy-back statement — loss claim needs dividend in Schedule OS <span class="doc-new">NEW</span></div></li>
+        <li><span class="doc-icon">💰</span><div>Dividend income statements — reconcile with AIS</div></li>
+        <li><span class="doc-icon">🌍</span><div>Foreign shares / RSUs / ESOPs details (Schedule FA, CG, FSI)</div></li>
+        <li><span class="doc-icon">📋</span><div>Carry-forward loss statements from prior years</div></li>
+        <li><span class="doc-icon">🏦</span><div>Interest from companies/NBFCs/HFCs — now specifically flagged <span class="doc-new">NEW in Schedule OS</span></div></li>
+      </ul>
+    </div>
+
+    <div class="doc-panel" id="panel-nri">
+      <ul class="doc-list">
+        <li><span class="doc-icon">✈️</span><div>Passport travel history — for residential status determination (ROR/RNOR/NR)</div></li>
+        <li><span class="doc-icon">🏦</span><div>Foreign bank account details — all countries (Schedule FA)</div></li>
+        <li><span class="doc-icon">💰</span><div>Foreign salary certificate / payslip</div></li>
+        <li><span class="doc-icon">🌐</span><div>Foreign tax credit computation + Form 67 — DTAA relief</div></li>
+        <li><span class="doc-icon">🏠</span><div>Foreign property and investment details (Schedule FA)</div></li>
+        <li><span class="doc-icon">📋</span><div>Double taxation agreement — relevant articles for treaty benefits</div></li>
+        <li><span class="doc-icon">🔐</span><div>FEMA compliance certificates (if applicable)</div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Section 6: Deductions ═══ -->
+<section class="g-section" id="deductions">
+  <div class="container">
+    <div class="g-section-header">
+      <div class="g-section-tag">💰 Deductions</div>
+      <h2>Key Deductions (Old Regime Only)</h2>
+      <p class="g-section-desc">These reduce your taxable income. Available only under the Old Tax Regime.</p>
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare-table">
+        <tr><th>Section</th><th>What's Covered</th><th>Max Limit</th></tr>
+        <tr><td><strong>80C</strong></td><td>PPF, ELSS, LIC, NSC, tuition fees, home loan principal</td><td>₹1,50,000</td></tr>
+        <tr><td><strong>80CCD(1B)</strong></td><td>Additional NPS contribution</td><td>₹50,000</td></tr>
+        <tr><td><strong>80D</strong></td><td>Health insurance (self + parents)</td><td>₹25,000 – ₹1,00,000</td></tr>
+        <tr><td><strong>80E</strong></td><td>Education loan interest</td><td>No limit (up to 8 yrs)</td></tr>
+        <tr><td><strong>80G</strong></td><td>Donations to eligible charities</td><td>50% or 100%</td></tr>
+        <tr><td><strong>80TTA</strong></td><td>Savings account interest</td><td>₹10,000</td></tr>
+        <tr><td><strong>24(b)</strong></td><td>Home loan interest (self-occupied)</td><td>₹2,00,000</td></tr>
+        <tr><td><strong>HRA</strong></td><td>House rent exemption (salaried)</td><td>Formula-based</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Section 7: Filing Process ═══ -->
+<section class="g-section" id="process">
+  <div class="container">
+    <div class="g-section-header">
+      <div class="g-section-tag">📝 Process</div>
+      <h2>Step-by-Step Filing Process</h2>
+      <p class="g-section-desc">Whether self-filing or using MakeEazy — here's the complete workflow.</p>
+    </div>
+
+    <div class="steps-timeline">
+      <div class="step-item"><div class="step-line"></div><div class="step-num">1</div><div class="step-content"><h4>Gather Documents</h4><p>Collect Form 16, bank statements, investment proofs, broker capital gains statement. Download AIS & 26AS from the IT portal.</p></div></div>
+      <div class="step-item"><div class="step-line"></div><div class="step-num">2</div><div class="step-content"><h4>Reconcile with AIS/TIS</h4><p>Cross-check <strong>every</strong> income source with AIS. Mismatches = future notices. This is the single most important step.</p></div></div>
+      <div class="step-item"><div class="step-line"></div><div class="step-num">3</div><div class="step-content"><h4>Choose Regime & Form</h4><p>Compute tax under both Old & New regime. Select the one that saves more. Pick the correct ITR form (use the finder above).</p></div></div>
+      <div class="step-item"><div class="step-line"></div><div class="step-num">4</div><div class="step-content"><h4>Compute Tax Liability</h4><p>Gross income → deductions → tax slabs → surcharge/cess → TDS already paid = tax payable or refund due.</p></div></div>
+      <div class="step-item"><div class="step-line"></div><div class="step-num">5</div><div class="step-content"><h4>File on Portal</h4><p>Submit on incometax.gov.in using the latest post-corrigendum utility (April 10+ version). You'll get an acknowledgement number.</p></div></div>
+      <div class="step-item"><div class="step-num">6</div><div class="step-content"><h4>E-Verify within 30 Days</h4><p>E-verify via Aadhaar OTP, net banking, or DSC. <strong>Without e-verification, your return is invalid.</strong></p></div></div>
+    </div>
+
+    <div class="callout highlight">
+      <span class="callout-icon">✨</span>
+      <div><strong>Skip the complexity.</strong> With MakeEazy, share your documents and our CAs handle reconciliation, regime selection, computation, filing, and e-verification — all within 24-48 hours. <a href="https://api.whatsapp.com/send/?phone=919992819995&text=Hi%2C%20I%20need%20help%20filing%20my%20ITR%20for%20AY%202026-27&type=phone_number&app_absent=0" target="_blank">WhatsApp Us →</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Section 8: Risk Areas ═══ -->
+<section class="g-section" id="risks">
+  <div class="container">
+    <div class="g-section-header">
+      <div class="g-section-tag">⚠️ Avoid Mistakes</div>
+      <h2>Top Mistakes That Trigger Notices</h2>
+      <p class="g-section-desc">These are the most common errors the Income Tax Department catches. Don't be one of them.</p>
+    </div>
+
+    <div class="accordion" id="riskAccordion">
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <h4>❌ Blind reliance on pre-filled AIS data</h4>
+          <span class="acc-badge all">All Forms</span>
+          <svg class="acc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="acc-body"><div class="acc-body-inner">AIS/TIS data may be incomplete, duplicated, or erroneous. <strong>Always cross-verify every entry with your actual documents.</strong> This single step prevents the majority of defective return notices.</div></div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <h4>❌ Wrong ITR form selection</h4>
+          <span class="acc-badge itr1">ITR-1/2</span>
+          <svg class="acc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="acc-body"><div class="acc-body-inner">With ITR-1 expansion, many clients shift from ITR-2 to ITR-1. But filing ITR-1 with LTCG &gt; ₹1.25L, capital losses, or STCG = defective return notice. <strong>Re-evaluate form eligibility for every case this year.</strong></div></div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <h4>❌ Wrong tax regime selection</h4>
+          <span class="acc-badge all">All Forms</span>
+          <svg class="acc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="acc-body"><div class="acc-body-inner">New regime is <strong>default</strong>. If you have heavy deductions (HRA + 80C + 80D + home loan), you may save more with old regime. <strong>Always compute under both regimes before choosing.</strong></div></div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <h4>❌ F&O income mixed with regular business</h4>
+          <span class="acc-badge itr3">ITR-3/5/6</span>
+          <svg class="acc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="acc-body"><div class="acc-body-inner">This is the <strong>most common ITR-3 error</strong> this season. F&O turnover and income must go in the new dedicated columns, separate from regular business. Intraday is speculative business — also reported separately.</div></div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <h4>❌ Missing MSME 43B(h) disallowance</h4>
+          <span class="acc-badge itr3">ITR-3/5/6</span>
+          <svg class="acc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="acc-body"><div class="acc-body-inner">If you have MSME vendors and delayed payments beyond 45 days, the interest is <strong>automatically disallowed by CPC</strong> if not reported proactively. Collect vendor ageing reports with exact payment dates.</div></div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <h4>❌ TDS mismatch with 26AS</h4>
+          <span class="acc-badge all">All Forms</span>
+          <svg class="acc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="acc-body"><div class="acc-body-inner">Every TDS/TCS entry must match Form 26AS exactly. Even ₹1 difference can lead to demand notices or reduced refund. If mismatch found, get revised TDS certificate from deductor before filing.</div></div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-header" onclick="toggleAcc(this)">
+          <h4>❌ Refund bank account not pre-validated</h4>
+          <span class="acc-badge all">All Forms</span>
+          <svg class="acc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="acc-body"><div class="acc-body-inner">If your bank account is not pre-validated on the e-filing portal, your refund gets stuck indefinitely. <strong>Validate before filing</strong> — not after.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Section 9: Quiz ═══ -->
+<section class="g-section" id="quiz">
+  <div class="container">
+    <div class="g-section-header">
+      <div class="g-section-tag">🎮 Test Yourself</div>
+      <h2>Do You Know Enough to File?</h2>
+      <p class="g-section-desc">3 quick questions based on this year's changes.</p>
+    </div>
+
+    <div class="quiz-container">
+      <div class="quiz-card">
+        <div class="quiz-num">Question 1 of 3</div>
+        <div class="quiz-q">Can ITR-1 filers now report LTCG from mutual funds?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" data-a="true" onclick="checkQuiz(this)">Yes, up to ₹1.25 lakh under Section 112A</div>
+          <div class="quiz-opt" data-a="false" onclick="checkQuiz(this)">No, they still need ITR-2</div>
+          <div class="quiz-opt" data-a="false" onclick="checkQuiz(this)">Only if they have no other income</div>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-num">Question 2 of 3</div>
+        <div class="quiz-q">What new field is mandatory for ITR-4 (Sugam) filers this year?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" data-a="false" onclick="checkQuiz(this)">GST registration number</div>
+          <div class="quiz-opt" data-a="true" onclick="checkQuiz(this)">Bank balance as at 31 March</div>
+          <div class="quiz-opt" data-a="false" onclick="checkQuiz(this)">Aadhaar of all family members</div>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-num">Question 3 of 3</div>
+        <div class="quiz-q">What is the new deadline for ITR-3 non-audit filers?</div>
+        <div class="quiz-opts">
+          <div class="quiz-opt" data-a="false" onclick="checkQuiz(this)">31 July 2026</div>
+          <div class="quiz-opt" data-a="true" onclick="checkQuiz(this)">31 August 2026</div>
+          <div class="quiz-opt" data-a="false" onclick="checkQuiz(this)">31 October 2026</div>
+        </div>
+        <div class="quiz-feedback"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Final CTA ═══ -->
+<section class="g-cta">
+  <div class="container">
+    <h2>Too Much to Track? Let Us Handle It.</h2>
+    <p>Our qualified CAs stay updated on every form change, corrigendum, and deadline — so you don't have to.</p>
+    <div class="g-cta-btns">
+      <a href="https://desk.makeeazy.in" target="_blank" class="btn-primary">File with MakeEazy →</a>
+      <a href="https://api.whatsapp.com/send/?phone=919992819995&text=Hi%2C%20I%20need%20help%20with%20ITR%20filing&type=phone_number&app_absent=0" target="_blank" class="btn-outline">💬 WhatsApp Us</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="g-footer">
+  <div class="container">
+    <p>© 2026 <a href="https://makeeazy.in" target="_blank">MakeEazy Consultants Pvt Ltd</a>. Content curated by qualified CAs for AY 2026-27 (FY 2025-26). Not formal tax advice.</p>
+  </div>
+</footer>
+
+<script>
+  // ── Countdown ──
+  (function() {
+    var deadline = new Date('2026-07-31T23:59:59+05:30');
+    var days = Math.max(0, Math.ceil((deadline - new Date()) / 864e5));
+    document.querySelectorAll('#guideDaysLeft, #guideDaysLeft2').forEach(function(el) { el.textContent = days; });
+  })();
+
+  // ── TOC active ──
+  (function() {
+    var pills = document.querySelectorAll('.toc-pill');
+    var sections = [];
+    pills.forEach(function(p) { var t = document.querySelector(p.getAttribute('href')); if (t) sections.push({el:t, pill:p}); });
+    window.addEventListener('scroll', function() {
+      var y = window.scrollY + 180;
+      var active = null;
+      sections.forEach(function(s) { if (y >= s.el.offsetTop) active = s; });
+      pills.forEach(function(p) { p.classList.remove('active'); });
+      if (active) active.pill.classList.add('active');
+    });
+  })();
+
+  // ── Form Finder ──
+  function showForm(el, cls, text) {
+    document.querySelectorAll('.ff-opt').forEach(function(o) { o.classList.remove('selected'); });
+    el.classList.add('selected');
+    var r = document.getElementById('ffResult');
+    r.className = 'ff-result show ' + cls;
+    r.innerHTML = '✅ <strong>Recommended: ' + cls.toUpperCase().replace('ITR','ITR-') + '</strong><br>' + text;
+  }
+
+  // ── Document Tabs ──
+  function showDocPanel(id) {
+    document.querySelectorAll('.doc-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.doc-panel').forEach(function(p) { p.classList.remove('active'); });
+    event.target.classList.add('active');
+    document.getElementById('panel-' + id).classList.add('active');
+  }
+
+  // ── Accordion ──
+  function toggleAcc(header) {
+    var item = header.parentElement;
+    var body = item.querySelector('.acc-body');
+    if (item.classList.contains('open')) {
+      item.classList.remove('open');
+      body.style.maxHeight = null;
+    } else {
+      // Close others
+      document.querySelectorAll('.acc-item.open').forEach(function(i) {
+        i.classList.remove('open');
+        i.querySelector('.acc-body').style.maxHeight = null;
+      });
+      item.classList.add('open');
+      body.style.maxHeight = body.scrollHeight + 'px';
+    }
+  }
+
+  // ── Quiz ──
+  function checkQuiz(el) {
+    var card = el.closest('.quiz-card');
+    if (card.dataset.answered) return;
+    card.dataset.answered = 'true';
+    var opts = card.querySelectorAll('.quiz-opt');
+    var fb = card.querySelector('.quiz-feedback');
+    opts.forEach(function(o) {
+      o.classList.add('disabled');
+      if (o.dataset.a === 'true') o.classList.add('correct');
+      else if (o === el && o.dataset.a === 'false') o.classList.add('wrong');
+    });
+    if (el.dataset.a === 'true') {
+      fb.textContent = '✅ Correct!';
+      fb.style.color = '#16a34a';
+    } else {
+      fb.textContent = '❌ Not quite — the correct answer is highlighted.';
+      fb.style.color = '#dc2626';
+    }
+  }
+</script>
+
+</body>
+</html>
