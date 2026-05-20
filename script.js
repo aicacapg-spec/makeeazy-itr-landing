@@ -425,18 +425,21 @@
     }
 
     // Behaviour based on count
+    var marquee = document.getElementById('videoMarquee');
     if (videos.length === 1) {
-      // Single video — centered, no scroll
+      // Single video — big, centered, no scroll
       html = buildCard(videos[0]);
       track.innerHTML = html;
-      track.classList.add('video-track-center');
+      track.className = 'video-track video-single';
       track.style.animation = 'none';
+      if (marquee) { marquee.style.maskImage = 'none'; marquee.style.webkitMaskImage = 'none'; }
     } else if (videos.length <= 3) {
-      // 2-3 videos — centered flex, no scroll
+      // 2-3 videos — grid, no scroll
       videos.forEach(function(v) { html += buildCard(v); });
       track.innerHTML = html;
-      track.classList.add('video-track-center');
+      track.className = 'video-track video-track-grid';
       track.style.animation = 'none';
+      if (marquee) { marquee.style.maskImage = 'none'; marquee.style.webkitMaskImage = 'none'; }
     } else {
       // 4+ videos — marquee scroll with duplicate set
       for (var set = 0; set < 2; set++) {
