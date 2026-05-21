@@ -70,24 +70,27 @@ canvas{display:block;width:100%;height:auto}
 .bg2{background:none;border:1.5px solid rgba(50,80,159,.1);color:var(--navy)}
 .bw{background:#25D366;color:#fff;box-shadow:0 4px 12px rgba(37,211,102,.15)}
 .bk{display:flex;flex-direction:column;gap:5px;align-items:center;width:100%}
-/* Mobile */
+
+/* ── Mobile portrait: fill entire viewport ── */
 @media(max-width:600px){
-  body{align-items:flex-start}
-  #GS{padding:2px}
-  .gc{border-radius:8px}
-  .hud{padding:5px 8px;font-size:10px;gap:4px}
+  html,body{height:100dvh;height:100vh;background:#000}
+  body{align-items:stretch;justify-content:stretch;padding:0}
+  #GS{padding:0;max-width:100%;display:flex;flex-direction:column;height:100dvh;height:100vh}
+  .gc{border-radius:0;flex:1;display:flex;flex-direction:column;border:none;box-shadow:none}
+  canvas{flex:1;width:100%;height:auto;min-height:0;object-fit:contain;background:#e8f0fe}
+  .hud{padding:6px 10px;font-size:10px;gap:4px;flex-shrink:0}
   .hud-l{font-size:12px;gap:1px}
   .hud-c{margin:0 6px}
   .hud-c .coins{font-size:10px}
   .hud-bar{height:4px}
-  .ov{padding:4px}
-  .oc{padding:12px 10px;border-radius:10px;max-height:calc(100% - 8px)}
+  .ov{position:fixed;inset:0;padding:12px;z-index:100}
+  .oc{padding:16px 14px;border-radius:12px;max-height:85vh;max-width:340px}
   .bk{gap:4px}
-  .bn{padding:8px 14px;font-size:11px;max-width:220px}
+  .bn{padding:9px 16px;font-size:12px;max-width:240px}
 }
 @media(max-width:380px){
-  .oc{padding:10px 8px}
-  .bn{padding:7px 12px;font-size:10px;max-width:200px}
+  .oc{padding:12px 10px}
+  .bn{padding:8px 14px;font-size:11px;max-width:220px}
   .ol{height:18px;margin-bottom:4px}
 }
 </style>
@@ -209,7 +212,11 @@ var C = {
    ═══════════════════════════════════════════ */
 var cv=document.getElementById('cv'),cx=cv.getContext('2d'),W=832,H=420,S=1;
 var logo=new Image();logo.src='../../favicon.png';var lok=false;logo.onload=function(){lok=true};
-function fit(){S=cv.parentElement.getBoundingClientRect().width/W;cv.style.height=(H*S)+'px'}
+function fit(){
+  var cw=cv.parentElement.getBoundingClientRect().width;
+  S=cw/W;
+  cv.style.height=(H*S)+'px';
+}
 fit();addEventListener('resize',fit);
 
 var G;
