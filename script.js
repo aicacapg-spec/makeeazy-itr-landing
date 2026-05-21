@@ -554,14 +554,6 @@
       frame.src = '/guide/play/';
       overlay.classList.add('active');
       document.body.style.overflow = 'hidden';
-
-      // Try to lock to landscape for best experience
-      try {
-        if (screen.orientation && screen.orientation.lock) {
-          screen.orientation.lock('landscape').catch(function(){});
-        }
-      } catch(e) {}
-
       trackClick('game_play_mobile', 'fullscreen');
     });
 
@@ -569,13 +561,6 @@
       overlay.classList.remove('active');
       frame.src = '';
       document.body.style.overflow = '';
-
-      // Unlock orientation
-      try {
-        if (screen.orientation && screen.orientation.unlock) {
-          screen.orientation.unlock();
-        }
-      } catch(e) {}
     }
 
     if (closeBtn) {

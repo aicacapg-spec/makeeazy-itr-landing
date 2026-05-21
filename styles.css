@@ -1002,11 +1002,15 @@ ul { list-style: none; }
   display: block;
 }
 .game-fullscreen-overlay iframe {
+  width: 100%;
+  height: 100%;
   border: none;
   display: block;
 }
 .game-fullscreen-back {
   position: fixed;
+  top: max(10px, env(safe-area-inset-top, 10px));
+  left: max(10px, env(safe-area-inset-left, 10px));
   z-index: 10001;
   width: 40px;
   height: 40px;
@@ -1022,34 +1026,6 @@ ul { list-style: none; }
   padding: 0;
 }
 .game-fullscreen-back:hover { background: rgba(0,0,0,0.8); }
-
-/* Landscape phones or tablets — no rotation needed */
-@media (orientation: landscape) {
-  .game-fullscreen-overlay iframe {
-    width: 100vw;
-    height: 100vh;
-  }
-  .game-fullscreen-back {
-    top: 10px;
-    left: 10px;
-  }
-}
-
-/* Portrait phones — rotate game to fill screen */
-@media (orientation: portrait) {
-  .game-fullscreen-overlay iframe {
-    position: absolute;
-    width: 100vh;
-    height: 100vw;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(90deg);
-  }
-  .game-fullscreen-back {
-    top: 10px;
-    left: 10px;
-  }
-}
 
 @media (min-width: 769px) {
   .game-mobile-launcher { display: none !important; }

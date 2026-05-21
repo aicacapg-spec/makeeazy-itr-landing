@@ -71,24 +71,25 @@ canvas{display:block;width:100%;height:auto}
 .bw{background:#25D366;color:#fff;box-shadow:0 4px 12px rgba(37,211,102,.15)}
 .bk{display:flex;flex-direction:column;gap:5px;align-items:center;width:100%}
 
-/* ── Mobile: compact for smaller screens ── */
+/* ── Mobile portrait: fill viewport ── */
 @media(max-width:600px){
-  body{align-items:flex-start}
-  #GS{padding:2px}
-  .gc{border-radius:8px}
-  .hud{padding:5px 8px;font-size:10px;gap:4px}
+  html,body{background:#000}
+  body{align-items:flex-start;padding:0}
+  #GS{padding:0;max-width:100%}
+  .gc{border-radius:0;box-shadow:none;border:none}
+  .hud{padding:6px 10px;font-size:10px;gap:4px}
   .hud-l{font-size:12px;gap:1px}
   .hud-c{margin:0 6px}
   .hud-c .coins{font-size:10px}
   .hud-bar{height:4px}
-  .ov{padding:6px}
-  .oc{padding:14px 12px;border-radius:10px;max-height:calc(100% - 12px)}
-  .bk{gap:4px}
-  .bn{padding:8px 14px;font-size:11px;max-width:220px}
+  .ov{padding:8px}
+  .oc{padding:16px 14px;border-radius:12px;max-height:calc(100% - 16px)}
+  .bk{gap:5px}
+  .bn{padding:9px 16px;font-size:12px;max-width:240px}
 }
 @media(max-width:380px){
-  .oc{padding:10px 8px}
-  .bn{padding:7px 12px;font-size:10px;max-width:200px}
+  .oc{padding:12px 10px}
+  .bn{padding:8px 14px;font-size:11px;max-width:220px}
   .ol{height:18px;margin-bottom:4px}
 }
 </style>
@@ -208,18 +209,25 @@ var C = {
 /* ═══════════════════════════════════════════
    ENGINE
    ═══════════════════════════════════════════ */
-var cv=document.getElementById('cv'),cx=cv.getContext('2d'),W=832,H=420,S=1;
+var cv=document.getElementById('cv'),cx=cv.getContext('2d');
+
+// Portrait detection: use tall canvas on narrow screens
+var isPortrait=(window.innerWidth<600 && window.innerHeight>window.innerWidth);
+var W=isPortrait?420:832, H=isPortrait?750:420;
+cv.width=W; cv.height=H;
+
 var logo=new Image();logo.src='../../favicon.png';var lok=false;logo.onload=function(){lok=true};
 function fit(){
   var cw=cv.parentElement.getBoundingClientRect().width;
   S=cw/W;
   cv.style.height=(H*S)+'px';
 }
+var S=1;
 fit();addEventListener('resize',fit);
 
 var G;
 function init(){
-  var gy=H*0.82;
+  var gy=isPortrait ? H*0.72 : H*0.82;
   G={on:false,f:0,spd:0,gy:gy,lives:C.LIVES,timer:0,paused:false,
      result:'',wt:0,score:0,
      obs:[],pts:[],pops:[],bns:[],bnCD:0,coins:[],coinCD:0,
@@ -230,10 +238,11 @@ function init(){
      castle:{x:W+800,visible:false},
      phase:1,spCD:100,dodges:0,bestStreak:0,
      coyote:0,/* frames since left ground */
-     P:{x:110,y:gy-42,w:28,h:42,vy:0,gnd:true,inv:0,rf:0,hr:0}
+     P:{x:isPortrait?60:110,y:gy-42,w:28,h:42,vy:0,gnd:true,inv:0,rf:0,hr:0}
   };
   G.P.y=gy-G.P.h;
-  G.bldgs=[];for(var i=0;i<12;i++)addBldg(i*110+Math.random()*30);
+  G.bldgs=[];var bldgCount=isPortrait?6:12;var bldgSpace=isPortrait?70:110;
+  for(var i=0;i<bldgCount;i++)addBldg(i*bldgSpace+Math.random()*30);
   G.bns=[];for(var i=0;i<2;i++)addBn(350+i*500);
   updHUD();
 }
