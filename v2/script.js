@@ -541,6 +541,39 @@
   }
 
   // ══════════════════════════════════════
+  // MOBILE GAME FULLSCREEN
+  // ══════════════════════════════════════
+  function initMobileGame() {
+    var playBtn = document.getElementById('gameMobilePlay');
+    var overlay = document.getElementById('gameFullscreen');
+    var closeBtn = document.getElementById('gameFullscreenClose');
+    var frame = document.getElementById('gameFullscreenFrame');
+    if (!playBtn || !overlay || !frame) return;
+
+    playBtn.addEventListener('click', function() {
+      frame.src = '/guide/play/';
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      trackClick('game_play_mobile', 'fullscreen');
+    });
+
+    function closeGame() {
+      overlay.classList.remove('active');
+      frame.src = '';
+      document.body.style.overflow = '';
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeGame);
+    }
+
+    // ESC key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && overlay.classList.contains('active')) closeGame();
+    });
+  }
+
+  // ══════════════════════════════════════
   // INIT
   // ══════════════════════════════════════
   document.addEventListener('DOMContentLoaded', function() {
@@ -553,6 +586,7 @@
     initScrollAnimations();
     initTorAnimations();
     initVideoCarousel();
+    initMobileGame();
     initExitIntent();
     trackVisit();
   });

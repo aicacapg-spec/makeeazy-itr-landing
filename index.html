@@ -265,14 +265,30 @@
 <!-- ════════ TAX ADVENTURE GAME ════════ -->
 <section class="game-section section" id="tax-game">
   <div class="container">
-    <div class="game-embed fade-up">
+    <!-- Desktop: inline iframe -->
+    <div class="game-embed game-desktop fade-up">
       <iframe src="/guide/play/" title="Tax Adventure — MakeEazy" id="gameFrame" loading="lazy"
               allow="autoplay" frameborder="0"
               style="width:100%;aspect-ratio:832/490;max-width:860px;min-height:300px;border-radius:12px;display:block;margin:0 auto;box-shadow:0 8px 32px rgba(50,80,159,0.08);border:1px solid rgba(50,80,159,0.06)">
       </iframe>
     </div>
+    <!-- Mobile: tap to play fullscreen -->
+    <div class="game-mobile-launcher fade-up" id="gameMobileLauncher">
+      <div class="game-mobile-card" id="gameMobileCard">
+        <div class="game-mobile-icon">🎮</div>
+        <h3 class="game-mobile-title">Tax Adventure</h3>
+        <p class="game-mobile-desc">Dodge tax obstacles & collect coins! Tap to play fullscreen.</p>
+        <button class="btn btn-primary game-mobile-btn" id="gameMobilePlay">▶ Play Now</button>
+      </div>
+    </div>
   </div>
 </section>
+
+<!-- Game Fullscreen Overlay (mobile only) -->
+<div class="game-fullscreen-overlay" id="gameFullscreen">
+  <button class="game-fullscreen-close" id="gameFullscreenClose" aria-label="Close">✕</button>
+  <iframe id="gameFullscreenFrame" allow="autoplay" frameborder="0" title="Tax Adventure — MakeEazy"></iframe>
+</div>
 
 <!-- ════════ TAX OPTIMIZATION REPORT SHOWCASE ════════ -->
 <section class="tor-section section" id="tax-report">
@@ -784,9 +800,7 @@
 <div class="sticky-cta" id="stickyCta">
   <div class="sticky-cta-inner">
     <a href="/taxhealth/" class="btn btn-accent">Get Report</a>
-    <a href="https://api.whatsapp.com/send/?phone=919992819995&text=Hi%2C%20I%20need%20help%20filing%20my%20ITR%20for%20AY%202026-27&type=phone_number&app_absent=0" target="_blank" class="btn btn-whatsapp-sm">
-      <svg viewBox="0 0 24 24" fill="#25D366" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/></svg>
-    </a>
+    <a href="https://desk.makeeazy.in" target="_blank" class="btn btn-primary">File Now →</a>
   </div>
 </div>
 

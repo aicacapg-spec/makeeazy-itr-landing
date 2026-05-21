@@ -132,13 +132,15 @@ canvas{display:block;width:100%;height:auto}
 <!-- Win -->
 <div class="ov off" id="wO"><div class="ob"></div><div class="oc">
   <p class="wi">🏆</p>
-  <h2 class="wt2">You made it.</h2>
+  <h2 class="wt2">You made it!</h2>
   <p class="ws">Be smart. Choose expert-assisted filing for safe and secure tax returns — every time.</p>
+  <div class="bk" style="margin-bottom:12px">
+    <button class="bn bp" id="bPA">Play Again</button>
+  </div>
   <p class="wsp">Expert support helps you avoid common filing mistakes before they become real problems.</p>
   <div class="bk">
-    <a href="/taxhealth/" target="_blank" class="bn bp">Check My Tax Health Score</a>
     <a href="https://desk.makeeazy.in" target="_blank" class="bn bs">File with MakeEazy</a>
-    <a href="https://api.whatsapp.com/send/?phone=919992819995&text=Hi%2C%20I%20want%20to%20file%20ITR%20with%20MakeEazy&type=phone_number&app_absent=0" target="_blank" class="bn bw">💬 WhatsApp MakeEazy</a>
+    <a href="/taxhealth/" target="_blank" class="bn bg2">Check My Tax Health Score</a>
   </div>
 </div></div>
 <!-- Over -->
@@ -603,6 +605,7 @@ document.body.addEventListener('touchstart',function(e){
 cv.addEventListener('mousedown',function(){jump()});
 document.getElementById('bS').addEventListener('click',startG);
 document.getElementById('bR').addEventListener('click',startG);
+document.getElementById('bPA').addEventListener('click',startG);
 document.getElementById('bC').addEventListener('click',resume);
 init();drawAll();
 })();

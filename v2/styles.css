@@ -959,14 +959,88 @@ ul { list-style: none; }
 .game-embed iframe:hover {
   box-shadow: 0 12px 40px rgba(50,80,159,0.12) !important;
 }
-@media (max-width: 600px) {
-  .game-section { padding: 16px 0 12px; }
-  .game-embed { margin-top: 4px; }
-  .game-embed iframe {
-    border-radius: 6px !important;
-    aspect-ratio: 3/2 !important;
-    min-height: 240px !important;
-  }
+
+/* Mobile game launcher card */
+.game-mobile-launcher { display: none; }
+.game-mobile-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(50,80,159,0.06);
+}
+.game-mobile-icon { font-size: 48px; margin-bottom: 12px; }
+.game-mobile-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+.game-mobile-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.game-mobile-btn {
+  font-size: 16px;
+  padding: 14px 36px;
+}
+
+/* Fullscreen game overlay */
+.game-fullscreen-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #000;
+}
+.game-fullscreen-overlay.active {
+  display: block;
+}
+.game-fullscreen-overlay iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+.game-fullscreen-close {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top, 12px));
+  right: max(12px, env(safe-area-inset-right, 12px));
+  z-index: 10001;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.game-fullscreen-close:hover { background: rgba(255,255,255,0.3); }
+
+@media (min-width: 769px) {
+  .game-mobile-launcher { display: none !important; }
+}
+@media (max-width: 768px) {
+  .game-desktop { display: none !important; }
+  .game-mobile-launcher { display: block; }
+  .game-section { padding: 20px 0 16px; }
+}
+@media (max-width: 480px) {
+  .game-section { padding: 12px 0 10px; }
+  .game-mobile-card { padding: 24px 18px; }
+  .game-mobile-icon { font-size: 40px; margin-bottom: 8px; }
+  .game-mobile-title { font-size: 20px; }
+  .game-mobile-desc { font-size: 13px; margin-bottom: 16px; }
+  .game-mobile-btn { font-size: 14px; padding: 12px 28px; }
 }
 @media (max-width: 400px) {
   .game-section { padding: 10px 0 8px; }
@@ -1241,8 +1315,10 @@ ul { list-style: none; }
 .persona-track {
   display: flex;
   gap: 24px;
-  animation: marquee 30s linear infinite;
+  animation: marquee 45s linear infinite;
   width: max-content;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 .persona-track:hover {
   animation-play-state: paused;
@@ -2538,7 +2614,7 @@ ul { list-style: none; }
   .nav-phone { display: none; }
   .hamburger { display: flex; }
 
-  .nav-links.mobile-open {
+  .nav-links.open {
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -2550,7 +2626,7 @@ ul { list-style: none; }
     gap: 20px;
     z-index: 999;
   }
-  .nav-links.mobile-open a { font-size: 16px; }
+  .nav-links.open a { font-size: 16px; }
   .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
   .hamburger.active span:nth-child(2) { opacity: 0; }
   .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px, -6px); }
@@ -2639,15 +2715,6 @@ ul { list-style: none; }
   .video-single .video-title { font-size: 15px; padding: 10px 14px 14px; }
   .video-track-grid { padding: 0 16px; gap: 16px; }
   .video-track-grid .video-card { width: 100%; min-width: unset; max-width: 100%; }
-
-  /* Game iframe */
-  .game-section { padding: 16px 0 12px; }
-  .game-embed { margin-top: 4px; }
-  .game-embed iframe {
-    border-radius: 6px !important;
-    aspect-ratio: 3/2 !important;
-    min-height: 240px !important;
-  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2690,14 +2757,6 @@ ul { list-style: none; }
 
   .final-cta-right { padding: 16px; }
   .final-cta-right .form-title { font-size: 16px; }
-
-  /* Game */
-  .game-section { padding: 10px 0 8px; }
-  .game-embed iframe {
-    aspect-ratio: 4/3 !important;
-    min-height: 220px !important;
-    border-radius: 4px !important;
-  }
 
   /* Buttons */
   .btn { font-size: 14px; padding: 12px 20px; }
