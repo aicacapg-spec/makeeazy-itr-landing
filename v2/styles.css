@@ -263,6 +263,7 @@ ul { list-style: none; }
   align-items: center;
   gap: 32px;
 }
+.nav-mobile-cta { display: none; }
 .nav-links a {
   font-size: 14px;
   font-weight: 600;
@@ -995,28 +996,23 @@ ul { list-style: none; }
   top: 0; left: 0; right: 0; bottom: 0;
   z-index: 10000;
   background: #000;
+  overflow: hidden;
 }
 .game-fullscreen-overlay.active {
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 .game-fullscreen-overlay iframe {
-  flex: 1;
-  width: 100%;
-  height: 100%;
   border: none;
   display: block;
 }
 .game-fullscreen-back {
   position: fixed;
-  top: max(10px, env(safe-area-inset-top, 10px));
-  left: max(10px, env(safe-area-inset-left, 10px));
   z-index: 10001;
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: rgba(0,0,0,0.5);
-  border: 1.5px solid rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.6);
+  border: 1.5px solid rgba(255,255,255,0.3);
   color: #fff;
   display: flex;
   align-items: center;
@@ -1025,7 +1021,35 @@ ul { list-style: none; }
   transition: background 0.2s;
   padding: 0;
 }
-.game-fullscreen-back:hover { background: rgba(0,0,0,0.7); }
+.game-fullscreen-back:hover { background: rgba(0,0,0,0.8); }
+
+/* Landscape phones or tablets — no rotation needed */
+@media (orientation: landscape) {
+  .game-fullscreen-overlay iframe {
+    width: 100vw;
+    height: 100vh;
+  }
+  .game-fullscreen-back {
+    top: 10px;
+    left: 10px;
+  }
+}
+
+/* Portrait phones — rotate game to fill screen */
+@media (orientation: portrait) {
+  .game-fullscreen-overlay iframe {
+    position: absolute;
+    width: 100vh;
+    height: 100vw;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  .game-fullscreen-back {
+    top: 10px;
+    left: 10px;
+  }
+}
 
 @media (min-width: 769px) {
   .game-mobile-launcher { display: none !important; }
@@ -2615,25 +2639,58 @@ ul { list-style: none; }
   .nav-phone { display: none; }
   .hamburger { display: flex; }
 
+  /* When menu open — kill backdrop-filter on navbar to fix stacking */
+  .navbar:has(.nav-links.open) {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: #ffffff;
+  }
+
   .nav-links.open {
     display: flex;
     flex-direction: column;
-    position: fixed;
-    top: 72px; left: 0; right: 0; bottom: 0;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
     background: #ffffff;
-    padding: 24px 20px;
-    gap: 20px;
+    padding: 16px 24px 24px;
+    gap: 0;
     z-index: 9999;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    overflow-y: auto;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+    border-top: 1px solid rgba(50,80,159,0.06);
   }
   .nav-links.open a {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     color: var(--navy);
-    padding: 12px 0;
+    padding: 14px 0;
     border-bottom: 1px solid rgba(50,80,159,0.06);
+    display: block;
   }
+  .nav-links.open a:last-child {
+    border-bottom: none;
+  }
+  .nav-links.open a:hover,
+  .nav-links.open a:active {
+    color: var(--orange);
+  }
+
+  /* Mobile menu CTA buttons */
+  .nav-mobile-cta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(50,80,159,0.08);
+  }
+  .nav-mobile-cta .btn {
+    width: 100%;
+    font-size: 14px;
+    padding: 12px 20px;
+  }
+
   .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
   .hamburger.active span:nth-child(2) { opacity: 0; }
   .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px, -6px); }
