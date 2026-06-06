@@ -622,7 +622,7 @@ async function submitLeadAndGetReport() {
           .catch(e => console.error('[Sheets] Submit error:', e));
 
         // Open WhatsApp with pre-filled message
-        const msg = encodeURIComponent(`Hi, I need my Tax Optimization Report.`);
+        const msg = encodeURIComponent(`I need my Tax Optimization Report.`);
         window.open(`https://wa.me/919992819995?text=${msg}`, '_blank');
 
         btn.innerHTML = '✅ Report Sent!';
