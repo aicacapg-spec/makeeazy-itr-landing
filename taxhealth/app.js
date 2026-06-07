@@ -32,6 +32,7 @@ function showScreen(num) {
     // Back button
     document.getElementById('backBtn').style.display = num > 1 ? '' : 'none';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    trackEvent('screen_' + num);
 }
 
 function goBack() {
@@ -44,6 +45,7 @@ function selectType(type, el) {
     selectedType = type;
     document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
+    trackEvent('income_type_selected', type);
 
     setTimeout(() => {
         if (type === 'salary') {
@@ -106,7 +108,7 @@ function renderFileList() {
 
 function removeFile(i) { uploadedFiles.splice(i, 1); renderFileList(); }
 function addMoreFiles() { document.getElementById('fileInput').click(); }
-function skipUpload() { showScreen(3); }
+function skipUpload() { trackEvent('upload_skipped'); showScreen(3); }
 
 // ── Drag & Drop ──
 const dz = document.getElementById('uploadZone');
@@ -118,6 +120,7 @@ if (dz) {
 
 // ── Form 16 Parsing ──
 async function startParsing() {
+    trackEvent('upload_started');
     if (!uploadedFiles.length) { toast('Upload at least one file', 'error'); return; }
     const btn = document.getElementById('parseBtn');
     btn.disabled = true; btn.textContent = 'Extracting...';
@@ -163,6 +166,8 @@ async function startParsing() {
         }
 
         if (uploadedFiles.length > 1) extractedData._multipleForm16 = true;
+
+        trackEvent('upload_completed');
 
         // Fill calculator form with extracted data
         fillFormFromExtracted();
@@ -411,6 +416,10 @@ function markFilledInputs() {
 
 document.addEventListener('input', e => {
     if (e.target.type === 'number') markFilledInputs();
+    saveFormState();
+});
+document.addEventListener('change', e => {
+    saveFormState();
 });
 
 // Business type toggles
@@ -470,6 +479,7 @@ async function runComputation() {
         return;
     }
 
+    trackEvent('calculator_submitted');
     showScreen(4);
 
     const inputs = collectFormInputs();
@@ -507,6 +517,8 @@ async function runComputation() {
     storeReport(pan, inputs, taxResult, insightResult);
 
     await delay(400);
+
+    trackEvent('computation_complete');
 
     // Update gate screen with real data
     updateGateScreen(pan);
@@ -609,6 +621,10 @@ async function submitLeadAndGetReport() {
             utmSource: _utm.source,
             utmMedium: _utm.medium,
             utmCampaign: _utm.campaign,
+            utmContent: _utm.content,
+            gclid: _utm.gclid,
+            fbclid: _utm.fbclid,
+            landedAt: _utm.landedAt,
             device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
             referrer: document.referrer || 'Direct'
         };
@@ -624,6 +640,9 @@ async function submitLeadAndGetReport() {
         // Open WhatsApp with pre-filled message
         const msg = encodeURIComponent(`I need my Tax Optimization Report.`);
         window.open(`https://wa.me/919992819995?text=${msg}`, '_blank');
+
+        trackEvent('lead_captured');
+        localStorage.removeItem('makeeazy_taxhealth_draft');
 
         btn.innerHTML = '✅ Report Sent!';
         toast('Report sent! Check WhatsApp for your PDF.', 'success');
@@ -663,6 +682,7 @@ async function storeReport(pan, inputs, taxRes, insightRes) {
             totalSavings: insightRes.totalPotentialSavings,
             reportData: JSON.stringify({ inputs, taxResult: taxRes, insights: insightRes }),
             utmSource: _utm.source, utmMedium: _utm.medium, utmCampaign: _utm.campaign,
+            utmContent: _utm.content, gclid: _utm.gclid, fbclid: _utm.fbclid, landedAt: _utm.landedAt,
             device: /Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop',
             referrer: document.referrer || 'Direct'
         };
@@ -698,9 +718,111 @@ const _utm = (function() {
     return {
         source: p.get('utm_source') || '',
         medium: p.get('utm_medium') || '',
-        campaign: p.get('utm_campaign') || ''
+        campaign: p.get('utm_campaign') || '',
+        content: p.get('utm_content') || '',
+        gclid: p.get('gclid') || '',
+        fbclid: p.get('fbclid') || '',
+        landedAt: new Date().toISOString()
     };
 })();
 
+// ── Funnel Analytics ──
+function trackEvent(event, extra) {
+    try {
+        var pan = (document.getElementById('panNumber') || {}).value || '';
+        var params = 'action=analytics&event=' + encodeURIComponent(event) + '&pan=' + encodeURIComponent(pan) + '&device=' + encodeURIComponent(/Mobi|Android/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop') + '&source=' + encodeURIComponent(_utm.source) + '&medium=' + encodeURIComponent(_utm.medium) + '&campaign=' + encodeURIComponent(_utm.campaign);
+        if (extra) params += '&extra=' + encodeURIComponent(extra);
+        navigator.sendBeacon ? navigator.sendBeacon(SHEETS_URL + '?' + params) : new Image().src = SHEETS_URL + '?' + params;
+    } catch(e) {}
+}
+
+// ── localStorage Save/Resume ──
+const DRAFT_KEY = 'makeeazy_taxhealth_draft';
+
+function saveFormState() {
+    try {
+        const fields = {};
+        // Save all number inputs
+        document.querySelectorAll('#screen3 input[type=number]').forEach(inp => {
+            if (inp.id) fields[inp.id] = inp.value;
+        });
+        // Save all select values
+        document.querySelectorAll('#screen3 select').forEach(sel => {
+            if (sel.id) fields[sel.id] = sel.value;
+        });
+        // Save text inputs (name, PAN)
+        const nameEl = document.getElementById('fullName');
+        const panEl = document.getElementById('panNumber');
+        if (nameEl) fields['fullName'] = nameEl.value;
+        if (panEl) fields['panNumber'] = panEl.value;
+
+        const draft = {
+            fields: fields,
+            selectedType: selectedType,
+            currentScreen: currentScreen,
+            savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch(e) {}
+}
+
+function resumeFromDraft() {
+    try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+
+        // Restore selectedType
+        if (draft.selectedType) {
+            selectedType = draft.selectedType;
+            // Visually select the type card
+            document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+            const cards = document.querySelectorAll('.type-card');
+            const types = ['salary', 'business', 'freelancer', 'investor', 'rental', 'multiple'];
+            const idx = types.indexOf(selectedType);
+            if (idx >= 0 && cards[idx]) cards[idx].classList.add('selected');
+            if (selectedType === 'business' || selectedType === 'freelancer') expandBusinessSection();
+        }
+
+        // Restore form fields
+        if (draft.fields) {
+            Object.keys(draft.fields).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = draft.fields[id];
+            });
+        }
+
+        markFilledInputs();
+
+        // Navigate to saved screen (but not beyond screen 3)
+        const targetScreen = Math.min(draft.currentScreen || 1, 3);
+        showScreen(targetScreen);
+
+        // Hide banner
+        document.getElementById('resumeBanner').style.display = 'none';
+    } catch(e) {
+        console.error('[Resume] Error:', e);
+        startFresh();
+    }
+}
+
+function startFresh() {
+    localStorage.removeItem(DRAFT_KEY);
+    document.getElementById('resumeBanner').style.display = 'none';
+    showScreen(1);
+}
+
 // ── Init ──
-showScreen(1);
+(function initApp() {
+    const hasDraft = localStorage.getItem(DRAFT_KEY);
+    if (hasDraft) {
+        try {
+            const draft = JSON.parse(hasDraft);
+            if (draft && draft.fields && Object.keys(draft.fields).length > 0) {
+                document.getElementById('resumeBanner').style.display = '';
+            }
+        } catch(e) {}
+    }
+    showScreen(1);
+    trackEvent('page_loaded');
+})();

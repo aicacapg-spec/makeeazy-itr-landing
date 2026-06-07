@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="description" content="Get your personalised Tax Optimization Report. Upload Form 16 or enter details — know your best regime, find hidden savings, and optimise your tax.">
 <title>Tax Optimization Report | MakeEazy</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='4' width='10' height='24' rx='2' fill='%2332509F'/%3E%3Crect x='14' y='8' width='10' height='20' rx='2' fill='%234A6BC5'/%3E%3Crect x='20' y='4' width='10' height='24' rx='2' fill='%2332509F'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="../favicon.png">
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -36,6 +36,13 @@
 
   <!-- ════ SCREEN 1: INCOME TYPE ════ -->
   <div class="card-body">
+    <div id="resumeBanner" style="display:none;background:#fff8f0;border:2px solid #FF6B35;border-radius:12px;padding:14px;font-size:13px;text-align:center;margin-bottom:16px">
+      <div style="margin-bottom:10px;font-weight:600;color:#333">You have an unfinished report. Resume where you left off?</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-primary" onclick="resumeFromDraft()" style="font-size:13px;padding:8px 20px">Resume</button>
+        <button class="btn btn-outline" onclick="startFresh()" style="font-size:13px;padding:8px 20px">Start Fresh</button>
+      </div>
+    </div>
     <div class="screen active" id="screen1">
       <h2 style="font-size:17px;font-weight:800;color:var(--navy);margin-bottom:4px">What's your primary source of income?</h2>
       <p style="font-size:13px;color:var(--muted);margin-bottom:4px">This helps us customise your tax analysis.</p>
