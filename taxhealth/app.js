@@ -656,7 +656,7 @@ async function submitLeadAndGetReport() {
 }
 
 // ── Google Sheets Storage ──
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxmyCpynk0YIVCnLydz_j2UNla5B4wgydVzV_AaRgFpnItvuCiKfsG3YfVxUEiHN3A_/exec';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzQrYMtoXin0mopOsHnFO9XxFHTOMozpTy91WzR4O7-IOQd_Hs4i7x4mq00Y6NSTgKE/exec';
 
 async function storeReport(pan, inputs, taxRes, insightRes) {
     if (!SHEETS_URL) return;
